@@ -1,0 +1,70 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: jsadmissions.momiji.com
+spec:
+  scope: Namespaced
+  group: momiji.com
+  names:
+    plural: jsadmissions
+    singular: jsadmission
+    kind: JsAdmissions
+    shortNames:
+      - jsa
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                kinds:
+                  description: List of kinds that are affected, like "pods" or "v1/pods" or "apps/v1/deployments".
+                  type: array
+                  items:
+                    type: string
+                js:
+                  description: Javascript code to execute.
+                  type: string
+              required: [ "kinds", "js" ]
+          required: [ "spec" ]
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: clusterjsadmissions.momiji.com
+spec:
+  scope: Cluster
+  group: momiji.com
+  names:
+    plural: clusterjsadmissions
+    singular: clusterjsadmission
+    kind: ClusterJsAdmissions
+    shortNames:
+      - cjsa
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                kinds:
+                  description: List of kinds that are affected, like "pods" or "v1/pods" or "apps/v1/deployments".
+                  type: array
+                  items:
+                    type: string
+                js:
+                  description: Javascript code to execute.
+                  type: string
+              required: [ "kinds", "js" ]
+          required: [ "spec" ]

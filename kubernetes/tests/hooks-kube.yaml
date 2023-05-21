@@ -1,0 +1,125 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: test-jsa
+webhooks:
+  - name: test-pods.momiji.com
+    namespaceSelector:
+      matchLabels:
+        "kubernetes.io/metadata.name": test-jsa
+    rules:
+      - apiGroups: [ "" ]
+        apiVersions: [ "v1" ]
+        operations: [ "CREATE", "UPDATE", "DELETE" ]
+        resources: [ "pods" ]
+        scope: "*"
+    clientConfig:
+      service:
+        namespace: test-jsa
+        name: test-jsa
+        path: /validate
+        port: 8043
+      caBundle: CABUNDLE
+    admissionReviewVersions: [ "v1" ]
+    sideEffects: None
+    timeoutSeconds: 10
+    failurePolicy: Ignore
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: test-jsa
+webhooks:
+  - name: annotate-pods.momiji.com
+    namespaceSelector:
+      matchLabels:
+        "kubernetes.io/metadata.name": test-jsa
+    rules:
+      - apiGroups: [ "" ]
+        apiVersions: [ "v1" ]
+        operations: [ "CREATE" ]
+        resources: [ "pods" ]
+        scope: "*"
+    clientConfig:
+      service:
+        namespace: test-jsa
+        name: test-jsa
+        path: /mutate
+        port: 8043
+      caBundle: CABUNDLE
+    admissionReviewVersions: [ "v1" ]
+    sideEffects: None
+    timeoutSeconds: 10
+    failurePolicy: Ignore
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-jsa
+  namespace: test-jsa
+  labels:
+    app.kubernetes.io/name: jsadmissions
+    app.kubernetes.io/instance: jsadmissions
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: jsadmissions
+      app.kubernetes.io/instance: jsadmissions
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: jsadmissions
+        app.kubernetes.io/instance: jsadmissions
+    spec:
+      automountServiceAccountToken: true
+      containers:
+        - name: jsadmissions
+          image: github.com/momiji/js-admission-controller:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ENV_JSA_VERBOSE
+              value: "false"
+            - name: ENV_JSA_TRACE
+              value: "false"
+          ports:
+            - name: https
+              containerPort: 8043
+          resources:
+            limits:
+              cpu: "1"
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsUser: 1001
+            runAsGroup: 1001
+          volumeMounts:
+            - mountPath: /etc/certs
+              name: certs
+              readOnly: true
+      restartPolicy: Always
+      serviceAccount: test-jsa
+      volumes:
+        - name: certs
+          secret:
+            secretName: test-jsa
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-jsa
+  namespace: test-jsa
+  labels:
+    app.kubernetes.io/name: jsadmissions
+    app.kubernetes.io/instance: jsadmissions
+spec:
+  ports:
+    - name: https
+      port: 8043
+  selector:
+    app.kubernetes.io/name: jsadmissions
+    app.kubernetes.io/instance: jsadmissions

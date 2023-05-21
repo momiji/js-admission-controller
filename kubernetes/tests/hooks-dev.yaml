@@ -1,0 +1,54 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: test-jsa
+webhooks:
+  - name: "test-pods.momiji.com"
+    namespaceSelector:
+      matchLabels:
+        "kubernetes.io/metadata.name": test-jsa
+    rules:
+      - apiGroups: [ "" ]
+        apiVersions: [ "v1" ]
+        operations: [ "CREATE", "UPDATE", "DELETE" ]
+        resources: [ "pods" ]
+        scope: "*"
+    clientConfig:
+      #      service:
+      #        namespace: test-jsa
+      #        name: jsa
+      #        port: 8043
+      url: https://devlinux:8043/validate
+      caBundle: CABUNDLE
+    admissionReviewVersions: [ "v1" ]
+    sideEffects: None
+    timeoutSeconds: 10
+    failurePolicy: Ignore
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: test-jsa
+webhooks:
+  - name: annotate-pods.momiji.com
+    namespaceSelector:
+      matchLabels:
+        "kubernetes.io/metadata.name": test-jsa
+    rules:
+      - apiGroups: [ "" ]
+        apiVersions: [ "v1" ]
+        operations: [ "CREATE" ]
+        resources: [ "pods" ]
+        scope: "*"
+    clientConfig:
+      #      service:
+      #        namespace: test-jsa
+      #        name: jsa
+      #        port: 8043
+      url: https://devlinux:8043/mutate
+      caBundle: CABUNDLE
+    admissionReviewVersions: [ "v1" ]
+    sideEffects: None
+    timeoutSeconds: 10
+    failurePolicy: Ignore
