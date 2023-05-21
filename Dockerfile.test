@@ -1,0 +1,4 @@
+FROM ubuntu
+
+COPY js-admission-controller /
+ENTRYPOINT "/js-admission-controller"

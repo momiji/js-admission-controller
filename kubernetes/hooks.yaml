@@ -1,0 +1,48 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: jsadmissions-default
+webhooks:
+  - name: default.jsadmissions.momiji.com
+    rules:
+      - apiGroups: [ "" ]
+        apiVersions: [ "v1" ]
+        operations: [ "CREATE" ]
+        resources: [ "pods" ]
+        scope: "*"
+    clientConfig:
+      service:
+        namespace: kube-jsadmissions
+        name: jsadmissions
+        path: /validate
+        port: 8043
+      caBundle: CABUNDLE
+    admissionReviewVersions: [ "v1" ]
+    sideEffects: None
+    timeoutSeconds: 10
+    failurePolicy: Fail
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: jsadmissions-default
+webhooks:
+  - name: default.jsadmissions.momiji.com
+    rules:
+      - apiGroups: [ "" ]
+        apiVersions: [ "v1" ]
+        operations: [ "CREATE" ]
+        resources: [ "pods" ]
+        scope: "*"
+    clientConfig:
+      service:
+        namespace: kube-jsadmissions
+        name: jsadmissions
+        path: /mutate
+        port: 8043
+      caBundle: CABUNDLE
+    admissionReviewVersions: [ "v1" ]
+    sideEffects: None
+    timeoutSeconds: 10
+    failurePolicy: Fail

@@ -1,63 +1,9 @@
 ---
-apiVersion: admissionregistration.k8s.io/v1
-kind: ValidatingWebhookConfiguration
-metadata:
-  name: test-jsa
-webhooks:
-  - name: test-pods.momiji.com
-    namespaceSelector:
-      matchLabels:
-        "kubernetes.io/metadata.name": test-jsa
-    rules:
-      - apiGroups: [ "" ]
-        apiVersions: [ "v1" ]
-        operations: [ "CREATE", "UPDATE", "DELETE" ]
-        resources: [ "pods" ]
-        scope: "*"
-    clientConfig:
-      service:
-        namespace: test-jsa
-        name: test-jsa
-        path: /validate
-        port: 8043
-      caBundle: CABUNDLE
-    admissionReviewVersions: [ "v1" ]
-    sideEffects: None
-    timeoutSeconds: 10
-    failurePolicy: Ignore
----
-apiVersion: admissionregistration.k8s.io/v1
-kind: MutatingWebhookConfiguration
-metadata:
-  name: test-jsa
-webhooks:
-  - name: annotate-pods.momiji.com
-    namespaceSelector:
-      matchLabels:
-        "kubernetes.io/metadata.name": test-jsa
-    rules:
-      - apiGroups: [ "" ]
-        apiVersions: [ "v1" ]
-        operations: [ "CREATE" ]
-        resources: [ "pods" ]
-        scope: "*"
-    clientConfig:
-      service:
-        namespace: test-jsa
-        name: test-jsa
-        path: /mutate
-        port: 8043
-      caBundle: CABUNDLE
-    admissionReviewVersions: [ "v1" ]
-    sideEffects: None
-    timeoutSeconds: 10
-    failurePolicy: Ignore
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: test-jsa
-  namespace: test-jsa
+  name: jsadmissions
+  namespace: kube-jsadmissions
   labels:
     app.kubernetes.io/name: jsadmissions
     app.kubernetes.io/instance: jsadmissions
@@ -76,7 +22,7 @@ spec:
       automountServiceAccountToken: true
       containers:
         - name: jsadmissions
-          image: localhost:32000/js-admission-controller:latest
+          image: ghcr.io/momiji/js-admission-controller:1.0.0
           imagePullPolicy: IfNotPresent
           env:
             - name: ENV_JSA_VERBOSE
@@ -102,17 +48,17 @@ spec:
               name: certs
               readOnly: true
       restartPolicy: Always
-      serviceAccount: test-jsa
+      serviceAccount: jsadmissions
       volumes:
         - name: certs
           secret:
-            secretName: test-jsa
+            secretName: jsadmissions-tls
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: test-jsa
-  namespace: test-jsa
+  name: jsadmissions
+  namespace: kube-jsadmissions
   labels:
     app.kubernetes.io/name: jsadmissions
     app.kubernetes.io/instance: jsadmissions
