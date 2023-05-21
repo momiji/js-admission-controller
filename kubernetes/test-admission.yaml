@@ -1,0 +1,32 @@
+---
+apiVersion: momiji.com/v1
+kind: JsAdmissions
+metadata:
+  name: test-log
+  namespace: test-jsa
+spec:
+  kinds:
+    - pods
+  js: |
+    function jsa_init(state) {
+      log("test-jsa init")
+      state.pods = 0
+    }
+    function jsa_created(obj, sync, state) {
+      log("test-jsa created: ", obj.metadata.namespace, " ", obj.metadata.name, " ", obj.metadata.resourceVersion)
+      state.pods = state.pods+1
+    }
+    function jsa_updated(obj, old) {
+      log("test-jsa updated: ", obj.metadata.namespace, " ", obj.metadata.name, " ", obj.metadata.resourceVersion)
+    }
+    function jsa_deleted(obj, old) {
+      log("test-jsa deleted: ", obj.metadata.namespace, " ", obj.metadata.name, " ", obj.metadata.resourceVersion)
+    }
+    function jsa_mutate(op, obj, sync, state) {
+      if (op != "CREATE") return;
+      if (obj.metadata.annotations == null)
+        obj.metadata.annotations = {}
+      obj.metadata.annotations["jsadmissions.momiji.com/pods"] = "" + state.pods
+      obj.metadata.annotations["jsadmissions.momiji.com/date"] = "" + new Date().toISOString()
+      return { Allowed: true, Result: obj }
+    }

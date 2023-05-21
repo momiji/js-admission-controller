@@ -18,11 +18,12 @@ CA=$(cat certs/ca.crt | base64 -w0)
 # deploy
 kubectl apply -f crds.yaml
 kubectl apply -f namespace.yaml
-kubectl create secret tls -n kube-jsadmissions jsadmission-tls --cert=certs/tls.crt --key=certs/tls.key --dry-run=client -oyaml | kubectl apply -f -
+kubectl create secret tls -n kube-jsadmissions jsadmissions-tls --cert=certs/tls.crt --key=certs/tls.key --dry-run=client -oyaml | kubectl apply -f -
 for f in `ls rbac*.yaml` ; do
     kubectl apply -f "$f"
 done
 kubectl apply -f deploy.yaml
+kubectl wait deployment -n kube-jsadmissions jsadmissions --for condition=Available=True --timeout=90s
 for f in `ls hooks*.yaml` ; do
     cat "$f" | sed "s/CABUNDLE/$CA/g" | kubectl apply -f -
 done

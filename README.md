@@ -35,7 +35,30 @@ Once all files are correcly updated, simply run the `./kubernetes/install.sh` sc
 
 This script can also be used to update the configuration as well as upgrade the docker image version.
 
-## Tests environment
+### Tests
+
+It is possible to use test installation by using a simple admission:
+
+```sh
+$ kubectl create namespace test-jsa
+$ kubectl apply -f kubernetes/test-admission.yaml
+$ kubectl apply -f kubernetes/test-pods.yaml
+```
+
+```sh
+$ kubectl get pods -n test-jsa
+NAME               READY   STATUS    RESTARTS   AGE
+test-log           1/1     Running   0          9s
+test-log-pending   0/1     Pending   0          9s
+
+$ kubectl get pods -n test-jsa -o json | jq '.items[].metadata.annotations | to_entries[] | [.key,.value] | join("=")' -rc | grep ^jsa
+jsadmissions.momiji.com/date=2023-05-21T21:19:07.228Z
+jsadmissions.momiji.com/pods=1
+jsadmissions.momiji.com/date=2023-05-21T21:19:07.202Z
+jsadmissions.momiji.com/pods=0
+```
+
+## Setup development environment
 
 Requirements:
 - ubuntu
@@ -63,6 +86,8 @@ To remove all objects except the CRD, simply delete `test-jsa` namespace:
 
 ```sh
 $ kubectl delete namespace test-jsa
+$ kubectl delete validatingwebhookconfigurations.admissionregistration.k8s.io test-jsa 
+$ kubectl delete mutatingwebhookconfigurations.admissionregistration.k8s.io test-jsa 
 ```
 
 ## Javascript specification
