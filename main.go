@@ -3,6 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/http"
+	"os"
+	"os/signal"
+	"regexp"
+	"strings"
+	"syscall"
+
 	"github.com/momiji/js-admission-controller/admission"
 	"github.com/momiji/js-admission-controller/discovery"
 	"github.com/momiji/js-admission-controller/logs"
@@ -14,13 +22,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"net"
-	"net/http"
-	"os"
-	"os/signal"
-	"regexp"
-	"strings"
-	"syscall"
 )
 
 var (
@@ -30,6 +31,7 @@ var (
 	admissions        *admission.Admissions
 	resourcesWatcher  *watcher.Watcher
 	admissionsWatcher *watcher.Watcher
+	Version           = "dev"
 )
 
 func main() {
@@ -37,7 +39,7 @@ func main() {
 
 	// vars
 	var tlsKey, tlsCert string
-	var version, help bool
+	var showVersion, showHelp bool
 	var ip net.IP
 	var port int
 
@@ -46,8 +48,8 @@ func main() {
 	pflag.IntVar(&port, "port", 8043, "Bind address Port")
 	pflag.StringVar(&tlsCert, "tlsCert", "/etc/certs/tls.crt", "Path to the TLS certificate")
 	pflag.StringVar(&tlsKey, "tlsKey", "/etc/certs/tls.key", "Path to the TLS key")
-	pflag.BoolVarP(&version, "version", "V", false, "Show version")
-	pflag.BoolVarP(&help, "help", "h", false, "Show help")
+	pflag.BoolVarP(&showVersion, "version", "V", false, "Show version")
+	pflag.BoolVarP(&showHelp, "help", "h", false, "Show help")
 	pflag.BoolVarP(&logs.DebugMode, "verbose", "v", false, "Verbose mode (with javascript logs)")
 	pflag.BoolVarP(&logs.TraceMode, "debug", "d", false, "Debug mode (all logs))")
 
@@ -70,8 +72,12 @@ func main() {
 
 	// parse
 	pflag.Parse()
-	if help {
+	if showHelp {
 		pflag.Usage()
+		os.Exit(0)
+	}
+	if showVersion {
+		fmt.Printf("Version: %s\n", Version)
 		os.Exit(0)
 	}
 
@@ -83,19 +89,19 @@ func main() {
 		clusterConfig, err = rest.InClusterConfig()
 	}
 	if err != nil {
-		logs.Fatalf("Unable to load kube config", err)
+		logs.Fatalf("Unable to load kube config: %v", err)
 	}
 
 	// create client
 	clusterClient, err = dynamic.NewForConfig(clusterConfig)
 	if err != nil {
-		logs.Fatalf("Unable to create kube client", err)
+		logs.Fatalf("Unable to create kube client: %v", err)
 	}
 
 	// create discovery
 	discoveryClient, err = discovery.NewDiscovery(clusterConfig)
 	if err != nil {
-		logs.Fatalf("Unable to create discovery client", err)
+		logs.Fatalf("Unable to create discovery client: %v", err)
 	}
 
 	// create admissions
