@@ -1,4 +1,4 @@
-module github.com/momiji/js-admission-controller
+module github.com/momiji/js-admissions-controller
 
 go 1.20
 

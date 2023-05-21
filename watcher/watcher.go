@@ -3,17 +3,18 @@ package watcher
 import (
 	"context"
 	"fmt"
-	"github.com/momiji/js-admission-controller/logs"
-	"github.com/momiji/js-admission-controller/store"
-	"github.com/momiji/js-admission-controller/utils"
+	"sync"
+	"time"
+
+	"github.com/momiji/js-admissions-controller/logs"
+	"github.com/momiji/js-admissions-controller/store"
+	"github.com/momiji/js-admissions-controller/utils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/tools/cache"
-	"sync"
-	"time"
 )
 
 const (

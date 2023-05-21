@@ -6,8 +6,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/momiji/js-admission-controller/logs"
-	"github.com/momiji/js-admission-controller/utils"
+	"github.com/momiji/js-admissions-controller/logs"
+	"github.com/momiji/js-admissions-controller/utils"
 	"github.com/snorwin/jsonpatch"
 	admission "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

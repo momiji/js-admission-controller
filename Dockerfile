@@ -17,5 +17,5 @@ RUN go test -cover -v ./...
 # Stage 2 - alpine image
 FROM alpine:3
 
-COPY --from=builder /go/src/js-admission-controller /
-ENTRYPOINT "/js-admission-controller"
+COPY --from=builder /go/src/js-admissions-controller /
+ENTRYPOINT "/js-admissions-controller"

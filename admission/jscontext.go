@@ -1,12 +1,13 @@
 package admission
 
 import (
+	"sync"
+
 	"github.com/dop251/goja"
 	"github.com/dop251/goja/ast"
 	"github.com/dop251/goja/parser"
-	"github.com/momiji/js-admission-controller/logs"
+	"github.com/momiji/js-admissions-controller/logs"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"sync"
 )
 
 var (

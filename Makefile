@@ -1,4 +1,4 @@
-BIN 	= js-admission-controller
+BIN 	= js-admissions-controller
 SRC 	= $(shell find -type f -name '*.go')
 DOCKER	= $(shell bash -c 'which podman &> /dev/null && echo podman || echo docker' )
 
@@ -18,9 +18,9 @@ clean:
 
 .PHONY: docker
 docker:
-	$(DOCKER) build . -f Dockerfile.test -t js-admission-controller:latest
+	$(DOCKER) build . -f Dockerfile.test -t js-admissions-controller:latest
 
 .PHONY: local
 local:
-	$(DOCKER) tag js-admission-controller:latest localhost:32000/js-admission-controller:latest
-	$(DOCKER) push localhost:32000/js-admission-controller:latest
+	$(DOCKER) tag js-admissions-controller:latest localhost:32000/js-admissions-controller:latest
+	$(DOCKER) push localhost:32000/js-admissions-controller:latest
