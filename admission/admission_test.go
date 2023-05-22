@@ -4,25 +4,31 @@ import "testing"
 
 func TestAdmissions_Find(t *testing.T) {
 	adm := NewAdmissions()
+	var code *AdmissionCode
 
-	adm.Upsert(&Admission{
+	code, _ = adm.Upsert(&Admission{
 		Namespace:  "",
 		Name:       "1",
 		Resources:  []string{"pods"},
 		Javascript: "",
 	})
-	adm.Upsert(&Admission{
+	code.IsValid = true
+
+	code, _ = adm.Upsert(&Admission{
 		Namespace:  "",
 		Name:       "2",
 		Resources:  []string{"pods"},
 		Javascript: "",
 	})
-	adm.Upsert(&Admission{
+	code.IsValid = true
+
+	code, _ = adm.Upsert(&Admission{
 		Namespace:  "ns",
 		Name:       "3",
 		Resources:  []string{"pods"},
 		Javascript: "",
 	})
+	code.IsValid = true
 
 	if len(adm.Find("pods", "ns")) != 3 {
 		t.Fatalf("failed")
