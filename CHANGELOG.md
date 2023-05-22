@@ -1,11 +1,3 @@
-## [1.0.2](https://github.com/momiji/js-admissions-controller/compare/v1.0.1...v1.0.2) (2023-05-22)
-
-
-### Bug Fixes
-
-* better logging information ([3329bd0](https://github.com/momiji/js-admissions-controller/commit/3329bd051250b74d1228f1f3f827d26ea4f78196))
-* prevent crash on new admission error ([36ee14d](https://github.com/momiji/js-admissions-controller/commit/36ee14dcb16a4054daf8c261df1ff686f6fd4086))
-
 ## [1.0.1](https://github.com/momiji/js-admissions-controller/compare/v1.0.0...v1.0.1) (2023-05-22)
 
 
