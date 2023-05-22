@@ -1,10 +1,11 @@
 package admission
 
 import (
-	admission "k8s.io/api/admission/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sort"
 	"sync"
+
+	admission "k8s.io/api/admission/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 type Admissions struct {
@@ -110,11 +111,13 @@ func (a *Admissions) Find(resource string, namespace string) []*AdmissionCode {
 		}
 	}
 	if namespace != "" {
-		for _, code := range a.namespaces[""].admissions {
-			for _, r := range code.Admission.Resources {
-				if r == resource {
-					codes = append(codes, code)
-					break
+		if list, ok := a.namespaces[""]; ok {
+			for _, code := range list.admissions {
+				for _, r := range code.Admission.Resources {
+					if r == resource {
+						codes = append(codes, code)
+						break
+					}
 				}
 			}
 		}
