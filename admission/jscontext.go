@@ -1,12 +1,13 @@
 package admission
 
 import (
+	"fmt"
+	"github.com/momiji/js-admissions-controller/logs"
 	"sync"
 
 	"github.com/dop251/goja"
 	"github.com/dop251/goja/ast"
 	"github.com/dop251/goja/parser"
-	"github.com/momiji/js-admissions-controller/logs"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -33,7 +34,7 @@ type JsFunction struct {
 	Params map[string]int
 }
 
-func NewJsContext(js string) (*JsContext, error) {
+func NewJsContext(name string, js string) (*JsContext, error) {
 	// compile code
 	prg, err := goja.Parse("", js, parser.WithDisableSourceMaps)
 	if err != nil {
@@ -45,17 +46,12 @@ func NewJsContext(js string) (*JsContext, error) {
 		return nil, err
 	}
 
+	// create runtime
 	runtime := goja.New()
 	runtime.RunProgram(ast)
-	runtime.Set("log", func(a ...interface{}) {
-		logs.Debug(a...)
-	})
-	runtime.Set("logf", func(f string, a ...interface{}) {
-		logs.Debugf(f, a...)
-	})
 
-	// get func and return object
-	return &JsContext{
+	// create context
+	context := JsContext{
 		mux:         &sync.Mutex{},
 		Program:     prg,
 		Compiled:    ast,
@@ -67,7 +63,24 @@ func NewJsContext(js string) (*JsContext, error) {
 		JsaCreated:  analyseFunction(runtime, prg, "jsa_created", "state", "sync", "obj"),
 		JsaUpdated:  analyseFunction(runtime, prg, "jsa_updated", "state", "sync", "obj", "old"),
 		JsaDeleted:  analyseFunction(runtime, prg, "jsa_deleted", "state", "sync", "obj"),
-	}, nil
+	}
+
+	// add runtime utils
+	runtime.Set("log", func(a ...interface{}) {
+		logs.Infof("js(%s) %s\n", name, fmt.Sprint(a...))
+	})
+	runtime.Set("logf", func(f string, a ...interface{}) {
+		logs.Infof("js(%s) %s\n", name, fmt.Sprintf(f, a...))
+	})
+	runtime.Set("debug", func(a ...interface{}) {
+		logs.Debugf("js(%s) %s\n", name, fmt.Sprint(a...))
+	})
+	runtime.Set("debugf", func(f string, a ...interface{}) {
+		logs.Debugf("js(%s) %s\n", name, fmt.Sprintf(f, a...))
+	})
+
+	// return
+	return &context, nil
 }
 
 func analyseFunction(runtime *goja.Runtime, prg *ast.Program, name string, parameters ...string) *JsFunction {
