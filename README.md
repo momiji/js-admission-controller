@@ -1,9 +1,21 @@
 # js-admissions-controller
 
 This controller is an admission webhook with the following features:
-- admssion rules (mutate, validate) are defined in CustomResourceDefinitions (CRD)
-- CRD can be defined at cluster level (ClusterJsAdmissions) or namespace level (JsAdmissions)
-- Mutations and validations are coded in javascript, allowing fast development and deployment
+- admission rules (mutate, validate) are defined in CRD (`CustomResourceDefinitions`)
+- CRD can be defined at cluster level (`ClusterJsAdmissions`) or namespace level (`JsAdmissions`)
+- mutations and validations are coded in javascript, allowing fast development and deployment
+
+## A brief history
+
+The idea for this project was born during the installation and configuration of SAS Viya4 for a customer.
+
+In SAS Viya4, it is often necessary to type the nodes of the kubernetes cluster according to their role, and this is done by using the native taints and tolerations of kubernetes.
+
+Unfortunately, taints are global to all pods on a node, which can impact other components than those deployed by SAS Viya4, like loggers or drivers, because it forbids them to start on tainted nodes if they don't have the appropriate tolerations.
+
+To solve this problem, the first approach was to modify all the objects (pods, podtemplates, ...) generated in the installation phase (with kustomize), by updating their affinities. But this requires to know in advance the exact list of all the objects that will be created by the operator in charge of the deployment.
+
+An alternative idea then came up: make the modifications at the creation of the pods, by developing a mutating admission webhook, and to facilitate the development and testing of the 150 pods to be changed, the code must be located elsewhere thatn in the webhook and coded in a dynamic language like javascript. 
 
 ## Install
 
@@ -20,8 +32,8 @@ Files:
 By default, the admission hook receives CREATE for pods on all namespaces.
 
 To add other apiGroups/versions:
-- update hooks.yaml to add additionnal apiGroups/versions or create a new file based on hooks.yaml
-- update rbac.yaml to add additionnal rules to watch or create a new file with new rules and bind the new roles to the `jsadmissions` service account
+- update `kubernetes/hooks.yaml` to add additionnal apiGroups/versions or create a new file based on it
+- update `kubernetes/rbac.yaml` to add additionnal rules to watch or create a new file with new rules and bind the new roles to the `jsadmissions` service account
 
 ### Certificates
 
