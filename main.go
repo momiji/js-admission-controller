@@ -64,7 +64,7 @@ func main() {
 			fn := pflag.CommandLine.Lookup(flagName)
 			if fn != nil {
 				if err = fn.Value.Set(vals[1]); err != nil {
-					logs.Errorf("Invalid value for %s", v)
+					logs.Fatalf("Invalid value for %s", v)
 				}
 			}
 		}
@@ -180,10 +180,12 @@ func admissionHandler(action int, obj *unstructured.Unstructured, old *unstructu
 		kr, err := discoveryClient.GetGVRFromResource(kind)
 		if err != nil {
 			logs.Errorf("CRD %s %s: invalid resource %s", gvk, name, kind)
+			return
 		}
 		kk, err := discoveryClient.GetGVKFromResource(kind)
 		if err != nil {
 			logs.Errorf("CRD %s %s: invalid kind %s", gvk, name, kind)
+			return
 		}
 		res = append(res, utils.GVKToString(kk))
 		watch = append(watch, kr)
@@ -217,13 +219,15 @@ func admissionHandler(action int, obj *unstructured.Unstructured, old *unstructu
 	}
 	code, err := admissions.Upsert(adm)
 	if err != nil {
-		logs.Errorf("Admissions: failed to add s ns=%s name=%s kinds=%v: %v", gvk, ns, name, res, err)
+		logs.Errorf("Admissions: failed to add %s ns=%s name=%s kinds=%v: %v", gvk, ns, name, res, err)
+		return
 	}
 
 	// initialise new admission
 	err = code.Init()
 	if err != nil {
-		logs.Errorf("Admissions: failed to init() s ns=%s name=%s kinds=%v: %v", gvk, ns, name, res, err)
+		logs.Errorf("Admissions: failed to initialize %s ns=%s name=%s kinds=%v: %v", gvk, ns, name, res, err)
+		return
 	}
 
 	// call created for all resources
@@ -232,10 +236,15 @@ func admissionHandler(action int, obj *unstructured.Unstructured, old *unstructu
 		for _, obj := range resourcesWatcher.GetResources(resource, code.Admission.Namespace) {
 			err = code.Created(obj)
 			if err != nil {
-				logs.Errorf("Admissions: failed to created() s ns=%s name=%s kinds=%v: %v", gvk, ns, name, res, err)
+				logs.Errorf("Admissions: failed to initialize all created() %s ns=%s name=%s kinds=%v: %v", gvk, ns, name, res, err)
+				return
 			}
 		}
 	}
+
+	// make admission valid
+	code.IsValid = true
+	logs.Infof("Admissions: success %s ns=%s name=%s kinds=%v", gvk, ns, name, res)
 }
 
 func resourceHandler(action int, obj *unstructured.Unstructured, old *unstructured.Unstructured) {

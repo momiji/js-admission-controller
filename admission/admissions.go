@@ -27,6 +27,7 @@ type AdmissionList struct {
 type AdmissionCode struct {
 	Admission *Admission
 	Context   *JsContext
+	IsValid   bool
 }
 
 func NewAdmissions() *Admissions {
@@ -44,13 +45,18 @@ func newAdmissionList() *AdmissionList {
 }
 
 func newAdmissionCode(adm *Admission) (*AdmissionCode, error) {
-	js, err := NewJsContext(adm.Javascript)
+	name := adm.Name
+	if adm.Namespace != "" {
+		name = adm.Namespace + "/" + adm.Name
+	}
+	js, err := NewJsContext(name, adm.Javascript)
 	if err != nil {
 		return nil, err
 	}
 	return &AdmissionCode{
 		Admission: adm,
 		Context:   js,
+		IsValid:   false,
 	}, nil
 }
 
@@ -102,10 +108,12 @@ func (a *Admissions) Find(resource string, namespace string) []*AdmissionCode {
 	codes := make([]*AdmissionCode, 0)
 	if list, ok := a.namespaces[namespace]; ok {
 		for _, code := range list.admissions {
-			for _, r := range code.Admission.Resources {
-				if r == resource {
-					codes = append(codes, code)
-					break
+			if code.IsValid {
+				for _, r := range code.Admission.Resources {
+					if r == resource {
+						codes = append(codes, code)
+						break
+					}
 				}
 			}
 		}
@@ -113,10 +121,12 @@ func (a *Admissions) Find(resource string, namespace string) []*AdmissionCode {
 	if namespace != "" {
 		if list, ok := a.namespaces[""]; ok {
 			for _, code := range list.admissions {
-				for _, r := range code.Admission.Resources {
-					if r == resource {
-						codes = append(codes, code)
-						break
+				if code.IsValid {
+					for _, r := range code.Admission.Resources {
+						if r == resource {
+							codes = append(codes, code)
+							break
+						}
 					}
 				}
 			}
