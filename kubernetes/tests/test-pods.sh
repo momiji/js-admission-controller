@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 cd "$(dirname "$0")"
 
-kubectl delete pod -n test-jsa test-log --force 2> /dev/null
+kubectl delete pod -n test-jsa test-log --force 2> /dev/null ||:
 kubectl apply -f pods.yaml
 
 echo
