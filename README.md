@@ -117,8 +117,10 @@ function jsa_deleted(obj, [sync], [state])
 
 // utils
 function jsa_find(kind, namespace) -> [obj...]
+function jsa_debug(s...)
+function jsa_debugf(fmt, s...)
 function jsa_log(s...)
-function jsa_logf(s...)
+function jsa_logf(fmt, s...)
 ```
 
 ### Method names
@@ -128,8 +130,15 @@ It is recommended to avoid prefixing custom methods with jsa_ and consider it is
 
 ### Global variables
 
-It is best to prevent use of global variables oto keep values across calls.
+It is best to prevent use of global variables to keep values across calls.
 Use the `state` object for this.
+
+### Known issues and solutions
+
+There are some known issues at this time:
+- array: push() is not working.
+  <br>Solution is to copy array into another variable, push new item(s) onto it, then copy back the variable.
+  <br>Example: `var a = obj.a; a.push(1); obj.a = a;`
 
 ## Javascript methods to implement
 
