@@ -5,6 +5,11 @@ metadata:
   name: jsadmissions-default
 webhooks:
   - name: default.jsadmissions.momiji.com
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: [ "kube-system", "kuke-jsadmissions" ]
     rules:
       - apiGroups: [ "" ]
         apiVersions: [ "v1" ]
@@ -29,6 +34,11 @@ metadata:
   name: jsadmissions-default
 webhooks:
   - name: default.jsadmissions.momiji.com
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: [ "kube-system", "kuke-jsadmissions" ]
     rules:
       - apiGroups: [ "" ]
         apiVersions: [ "v1" ]
