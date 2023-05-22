@@ -22,7 +22,7 @@ spec:
       automountServiceAccountToken: true
       containers:
         - name: jsadmissions
-          image: ghcr.io/momiji/js-admissions-controller:1.0.0
+          image: ghcr.io/momiji/js-admissions-controller:1.0.1
           imagePullPolicy: IfNotPresent
           env:
             - name: ENV_JSA_VERBOSE
