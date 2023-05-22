@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/momiji/js-admissions-controller/compare/v1.0.0...v1.0.1) (2023-05-22)
+
+
+### Bug Fixes
+
+* crash when no cluster jsadmissions are defined ([e446b89](https://github.com/momiji/js-admissions-controller/commit/e446b89213a610e29b6298ae0d5a876378e5215f))
+
 # 1.0.0 (2023-05-21)
 
 
