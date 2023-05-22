@@ -9,7 +9,7 @@ webhooks:
       matchExpressions:
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values: [ "kube-system", "kuke-jsadmissions" ]
+          values: [ "kube-system", "kube-jsadmissions" ]
     rules:
       - apiGroups: [ "" ]
         apiVersions: [ "v1" ]
@@ -38,7 +38,7 @@ webhooks:
       matchExpressions:
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values: [ "kube-system", "kuke-jsadmissions" ]
+          values: [ "kube-system", "kube-jsadmissions" ]
     rules:
       - apiGroups: [ "" ]
         apiVersions: [ "v1" ]
