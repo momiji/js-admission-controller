@@ -14,13 +14,16 @@ run: $(BIN)
 
 .PHONY: clean
 clean:
-	rm $(BIN)
+	rm -f $(BIN) .make-*
 
 .PHONY: docker
-docker:
+docker: .make-docker
+.make-docker: Dockerfile $(BIN)
 	$(DOCKER) build . -f Dockerfile.test -t js-admissions-controller:latest
+	touch .make-docker
 
 .PHONY: local
-local:
+local: .make-local
+.make-local: .make-docker
 	$(DOCKER) tag js-admissions-controller:latest localhost:32000/js-admissions-controller:latest
 	$(DOCKER) push localhost:32000/js-admissions-controller:latest

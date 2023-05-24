@@ -1,3 +1,5 @@
+.idea
+.make-*
 *~
 /js-admissions-controller
 /kubernetes/**/certs/
