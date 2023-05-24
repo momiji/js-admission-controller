@@ -19,7 +19,7 @@ webhooks:
     clientConfig:
       service:
         namespace: kube-jsadmissions
-        name: jsadmissions
+        name: jsadmissions-webhook
         path: /validate
         port: 8043
       caBundle: CABUNDLE
@@ -48,7 +48,7 @@ webhooks:
     clientConfig:
       service:
         namespace: kube-jsadmissions
-        name: jsadmissions
+        name: jsadmissions-webhook
         path: /mutate
         port: 8043
       caBundle: CABUNDLE

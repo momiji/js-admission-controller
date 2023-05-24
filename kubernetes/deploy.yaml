@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: jsadmissions
+  name: jsadmissions-webhook
   namespace: kube-jsadmissions
   labels:
     app.kubernetes.io/name: jsadmissions
@@ -57,7 +57,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: jsadmissions
+  name: jsadmissions-webhook
   namespace: kube-jsadmissions
   labels:
     app.kubernetes.io/name: jsadmissions

@@ -23,7 +23,7 @@ for f in `ls rbac*.yaml` ; do
     kubectl apply -f "$f"
 done
 kubectl apply -f deploy.yaml
-kubectl wait deployment -n kube-jsadmissions jsadmissions --for condition=Available=True --timeout=90s
+kubectl wait deployment -n kube-jsadmissions jsadmissions-webhook --for condition=Available=True --timeout=90s
 for f in `ls hooks*.yaml` ; do
     cat "$f" | sed "s/CABUNDLE/$CA/g" | kubectl apply -f -
 done
