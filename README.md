@@ -13,9 +13,9 @@ In SAS Viya4, it is often necessary to type the nodes of the kubernetes cluster 
 
 Unfortunately, taints are global to all pods on a node, which can impact other components than those deployed by SAS Viya4, like loggers or drivers, because it forbids them to start on tainted nodes if they don't have the appropriate tolerations.
 
-To solve this problem, the first approach was to modify all the objects (pods, podtemplates, ...) generated in the installation phase (with kustomize), by updating their affinities. But this requires to know in advance the exact list of all the objects that will be created by the operator in charge of the deployment.
+To solve this problem, the first approach was to modify all the objects (pods, podtemplates, ...) generated in the installation phase (with kustomize), by updating their nodeAffinity/nodeSelector. But this requires to know in advance the exact list of all the objects that will be created by the operator in charge of the deployment.
 
-An alternative idea then came up: make the modifications at the creation of the pods, by developing a mutating admission webhook, and to facilitate the development and testing of the 150 pods to be changed, the code must be located elsewhere thatn in the webhook and coded in a dynamic language like javascript. 
+An alternative idea then came up: make the modifications at the creation of the pods, by developing a mutating admission webhook, and to facilitate the development and testing of the 150 pods to be changed, the code must be located elsewhere than in the webhook and coded in a dynamic language like javascript. 
 
 ## Install
 
@@ -239,7 +239,7 @@ function jsa_mutate(op, obj) {
     if (op != "CREATE" || obj.kind !== "Pod") return;
     if (obj.metadata.annotations == null)
         obj.metadata.annotations = {};
-    obj.metadata.annotations["jsadmissions.momiji.com/test"] = "1";
+    obj.metadata.annotations["jsadmissions.momiji.com/date"] = "" + new Date().toISOString();
     return { Allowed: true, Result: obj };
 }
 ```
@@ -253,7 +253,7 @@ Here, we would need to:
 - implement `jsa_created` and `jsa_deleted` functions to update the value
 - implement `jsa_validate` to test and eventually prevent object creation when limit is reached
 - use `state` to store the number of existing pods
-- use `sync` to be able to update this value atomically
+- use `sync` to be able to read/write this value atomically
 
 ```js
 // entrypoints
@@ -276,7 +276,7 @@ function jsa_validate(op, obj, sync, state) {
     // Check object kind and namespace
     if (op != "CREATE" || !check(obj)) return;
     // Check pod count < limit
-    if (state.podCount >= LIMIT) {
+    if (state.podCount >= POD_LIMIT) {
         return { Allowed: false, Message: "Max number of pods has been reached" };
     }
     return;
@@ -286,5 +286,80 @@ var NAMESPACE_REGEX = /^default($|-)/;
 var POD_LIMIT = 40;
 function check(obj) {
     return obj.kind === "Pod" && obj.metadata.namespace.match(NAMESPACE_REGEX) != null;
+}
+```
+
+## Real world use case
+
+This example is taken from our SAS Viya4 installation process, where we need to replace taints/tolerations logic by a nodeSelector field, with additional custom hacks for cas workers and crunchy database.
+
+```js
+/*
+# update nodeSelector for all pods
+# - if casoperator.sas.com/node-type=worker => 'cas'
+# - if casoperator.sas.com/node-type=* => 'compute'
+# - if launcher.sas.com/job-type=compute-server => 'compute'
+# - if workload.sas.com/class => value
+# - else => stateless
+# update resources for cas workers
+# - if casoperator.sas.com/node-type=worker => use dedicated annotations
+# update database command for crunchy
+# - if postgres-operator.crunchydata.com/data=postgres => update command of container database
+*/
+function container_by_name(containers, name) {
+    for (var c of containers) {
+        if (c.name == name) return c;
+    }
+    return null;
+}
+function jsa_mutate(obj) {
+    // init labels
+    if (obj.metadata.labels == null)
+        obj.metadata.labels = {};
+    // compute new class
+    var workload = "stateless";
+    var labels = obj.metadata.labels;
+    if (labels["casoperator.sas.com/node-type"] != null) {
+        var v = labels["casoperator.sas.com/node-type"];
+        if (v == "worker") {
+            workload = "cas";
+            // update resources for cas workers
+            var container = container_by_name(obj.spec.containers, "sas-cas-server");
+            var annos = obj.metadata.annotations;
+            if (container != null) {
+                if (annos["casworker.sas.com/cpu-limit"] != null)
+                    container.resources.limits.cpu = annos["casworker.sas.com/cpu-limit"];
+                if (annos["casworker.sas.com/cpu-request"] != null)
+                    container.resources.requests.cpu = annos["casworker.sas.com/cpu-request"];
+                if (annos["casworker.sas.com/mem-limit"] != null)
+                    container.resources.limits.memory = annos["casworker.sas.com/mem-limit"];
+                if (annos["casworker.sas.com/mem-request"] != null)
+                    container.resources.requests.memory = annos["casworker.sas.com/mem-request"];
+            }
+        } else {
+            workload = "compute";
+        }
+    } else if (labels["launcher.sas.com/job-type"] == "compute-server") {
+        workload = "compute";
+    } else if (labels["workload.sas.com/class"] != null) {
+        workload = labels["workload.sas.com/class"];
+    }
+    // update database command for crunchy
+    if (labels["postgres-operator.crunchydata.com/data"] == "postgres") {
+        var container = container_by_name(obj.spec.containers, "database");
+        if (container != null && container.command != null && container.command.join(" ") == "patroni /etc/patroni") {
+            container.command = [ "/bin/bash", "-ceEx", "ulimit -c 0 ; ulimit -a ; patroni /etc/patroni" ];
+        } else {
+            return { Allowed: false, Message: "Invalid postgres container database command, fix code or make it more generic" };
+        }
+    }
+    // add label with new class
+    labels["workload.sas.com/jsa-class"] = workload;
+    // add nodeSelector
+    if (obj.spec.nodeSelector == null)
+        obj.spec.nodeSelector = {};
+    obj.spec.nodeSelector["workload.sas.com/" + workload] = "yes";
+    // return success
+    return { Allowed: true, Result: obj };
 }
 ```
