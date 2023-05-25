@@ -1,4 +1,4 @@
-name: Release GitHub
+name: GitHub Release
 
 on:
   workflow_dispatch:
