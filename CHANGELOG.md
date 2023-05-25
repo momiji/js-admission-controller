@@ -1,3 +1,11 @@
+## [1.0.4](https://github.com/momiji/js-admissions-controller/compare/v1.0.3...v1.0.4) (2023-05-25)
+
+
+### Bug Fixes
+
+* add js runtime pooling and fix concurrency ([ba84b52](https://github.com/momiji/js-admissions-controller/commit/ba84b52635db6a72a785af394841b75e1cce3b67))
+* better goja objects with ToObject() alt ([89c884a](https://github.com/momiji/js-admissions-controller/commit/89c884acc0dbd4ee9d2cc4cbb004db5c90ca77e2))
+
 ## [1.0.3](https://github.com/momiji/js-admissions-controller/compare/v1.0.2...v1.0.3) (2023-05-22)
 
 
