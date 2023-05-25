@@ -1,4 +1,4 @@
-name: Edge Hosted
+name: GitHub Hosted
 
 on:
   workflow_dispatch:
