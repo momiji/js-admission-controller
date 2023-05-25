@@ -1,0 +1,93 @@
+name: Release Hosted
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [self-hosted]
+
+permissions:
+  contents: read
+
+jobs:
+
+  hosted-release:
+
+    name: Release
+    runs-on: self-hosted
+    permissions:
+      contents: write # to be able to publish a GitHub release
+      issues: write # to be able to comment on released issues
+      pull-requests: write # to be able to comment on released pull requests
+      packages: write # to be able to publish packages
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup NodeJs
+        uses: actions/setup-node@v3
+        with:
+          node-version: "lts/*"
+
+      - name: Install semantic release
+        run: npm install -g semantic-release @semantic-release/changelog @semantic-release/exec @semantic-release/git
+
+      #- name: Verify the integrity of provenance attestations and registry signatures for installed dependencies
+      #  run: npm audit signatures
+
+      - name: Create release
+        id: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeux
+          npx semantic-release
+          cat .nextRelease >> $GITHUB_OUTPUT
+          if [[ "${{github.ref}}" =~ ^refs/heads/[0-9]+\.x$ ]]; then
+            echo "major=true" >> $GITHUB_OUTPUT
+          fi
+
+      #    - name: Dotenv action
+      #      id: dotenv
+      #      uses: falti/dotenv-action@v1.0.4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          flavor: |
+            latest=false
+          images: |
+            ghcr.io/momiji/js-admissions-controller
+          tags: |
+            type=semver,pattern={{major}}.{{minor}}.{{patch}},value=${{ steps.release.outputs.version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.release.outputs.version }}
+            type=semver,pattern={{major}},value=${{ steps.release.outputs.version }},enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || steps.release.outputs.major == 'true' }}
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: RELEASE_VERSION="v${{steps.release.outputs.version}}"
+
+
+#    - name: Build the Docker image
+#      run: >
+#        docker build .
+#        --file Dockerfile
+#        --build-arg RELEASE_VERSION="$RELEASE_VERSION"
+#        --tag gh-workflows:v$RELEASE_VERSION
