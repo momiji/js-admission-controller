@@ -2,4 +2,4 @@
 .make-*
 *~
 /js-admissions-controller
-/kubernetes/**/certs/
+certs/

@@ -10,7 +10,7 @@ $(BIN): $(SRC)
 
 .PHONY: run
 run: $(BIN)
-	KUBECONFIG=~/.kube/config ./$(BIN) --tlsCert ./kubernetes/tests/certs/tls.crt --tlsKey ./kubernetes/tests/certs/tls.key
+	KUBECONFIG=~/.kube/config ./$(BIN) --tlsCert ./tests/certs/tls.crt --tlsKey ./tests/certs/tls.key
 
 .PHONY: clean
 clean:

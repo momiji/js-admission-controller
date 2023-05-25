@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 cd "$(dirname "$0")"
 
-HOSTNAME=devlinux
+HOSTNAME=$(hostname -s)
 SERVICE=test-jsa.test-jsa.svc
 DOCKER=$( which podman &> /dev/null && echo podman || echo docker )
 
@@ -16,9 +16,9 @@ $DOCKER run --rm -u $(id -u) -v $PWD/certs:/certs \
 CA=$(cat certs/ca.crt | base64 -w0)
 
 # deploy
-kubectl apply -f ../crds.yaml
+kubectl apply -f crds.yaml
 kubectl apply -f namespace.yaml
 kubectl apply -f rbac.yaml
 kubectl create secret tls -n test-jsa test-jsa --cert=certs/tls.crt --key=certs/tls.key --dry-run=client -oyaml | kubectl apply -f -
-cat hooks-${1:-kube}.yaml | sed "s/CABUNDLE/$CA/g" | kubectl apply -f -
+cat hooks-${1:-kube}.yaml | sed "s/SERVERNAME/$HOSTNAME/g" | sed "s/CABUNDLE/$CA/g" | kubectl apply -f -
 kubectl apply -f admissions.yaml

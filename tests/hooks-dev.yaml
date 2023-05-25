@@ -19,7 +19,7 @@ webhooks:
       #        namespace: test-jsa
       #        name: jsa
       #        port: 8043
-      url: https://devlinux:8043/validate
+      url: https://SERVERNAME:8043/validate
       caBundle: CABUNDLE
     admissionReviewVersions: [ "v1" ]
     sideEffects: None
@@ -46,7 +46,7 @@ webhooks:
       #        namespace: test-jsa
       #        name: jsa
       #        port: 8043
-      url: https://devlinux:8043/mutate
+      url: https://SERVERNAME:8043/mutate
       caBundle: CABUNDLE
     admissionReviewVersions: [ "v1" ]
     sideEffects: None

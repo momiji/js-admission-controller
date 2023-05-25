@@ -90,8 +90,8 @@ $ make local
 Tests:
 
 ```sh
-$ ./kubernetes/tests/test-deploy.sh
-$ ./kubernetes/tests/test-pods.sh
+$ ./tests/install.sh
+$ ./tests/pods.sh
 ```
 
 To remove all objects except the CRD, simply delete `test-jsa` namespace:
