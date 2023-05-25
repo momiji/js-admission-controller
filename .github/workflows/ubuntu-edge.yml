@@ -4,6 +4,9 @@ on:
   workflow_dispatch:
   repository_dispatch:
     types: [ubuntu-edge]
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
