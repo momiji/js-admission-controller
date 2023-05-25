@@ -144,23 +144,9 @@ func (a *Admissions) Find(resource string, namespace string) []*AdmissionCode {
 	return codes
 }
 
-//	func (a *Admissions) Init(code *AdmissionCode) (goja.Value, error) {
-//		ctx := code.Context
-//		_, err := ctx.Call(ctx.JsaInit, a.mux, false, "state", ctx.State, "", nil, "", nil)
-//		if err != nil {
-//			return nil, err
-//		}
-//		if ctx.JsaCreated != nil {
-//			_, err := ctx.Call(ctx.JsaCreated, a.mux, true, "state", ctx.State, "sync", true, "obj", nil)
-//			if err != nil {
-//				return nil, err
-//			}
-//		}
-//		return nil, nil
-//	}
 func (c *AdmissionCode) Init() error {
 	ctx := c.Context
-	_, err := ctx.Call(c.Context.JsaInit, true, map[string]interface{}{"state": ctx.State})
+	_, err := ctx.Call(c.Context.JsaInit, true, map[string]interface{}{"state": &ctx.State})
 	if err != nil {
 		return err
 	}
@@ -169,7 +155,7 @@ func (c *AdmissionCode) Init() error {
 
 func (c *AdmissionCode) Created(obj *unstructured.Unstructured) error {
 	ctx := c.Context
-	_, err := ctx.Call(c.Context.JsaCreated, false, map[string]interface{}{"state": ctx.State, "sync": true, "obj": obj.Object})
+	_, err := ctx.Call(c.Context.JsaCreated, false, map[string]interface{}{"state": &ctx.State, "sync": true, "obj": obj.Object})
 	if err != nil {
 		return err
 	}
@@ -178,7 +164,7 @@ func (c *AdmissionCode) Created(obj *unstructured.Unstructured) error {
 
 func (c *AdmissionCode) Updated(obj *unstructured.Unstructured, old *unstructured.Unstructured) error {
 	ctx := c.Context
-	_, err := ctx.Call(c.Context.JsaUpdated, false, map[string]interface{}{"state": ctx.State, "sync": true, "obj": obj.Object, "old": old.Object})
+	_, err := ctx.Call(c.Context.JsaUpdated, false, map[string]interface{}{"state": &ctx.State, "sync": true, "obj": obj.Object, "old": old.Object})
 	if err != nil {
 		return err
 	}
@@ -187,7 +173,7 @@ func (c *AdmissionCode) Updated(obj *unstructured.Unstructured, old *unstructure
 
 func (c *AdmissionCode) Deleted(obj *unstructured.Unstructured) error {
 	ctx := c.Context
-	_, err := ctx.Call(c.Context.JsaDeleted, false, map[string]interface{}{"state": ctx.State, "sync": true, "obj": obj.Object})
+	_, err := ctx.Call(c.Context.JsaDeleted, false, map[string]interface{}{"state": &ctx.State, "sync": true, "obj": obj.Object})
 	if err != nil {
 		return err
 	}
@@ -196,7 +182,7 @@ func (c *AdmissionCode) Deleted(obj *unstructured.Unstructured) error {
 
 func (c *AdmissionCode) Validate(operation admission.Operation, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	ctx := c.Context
-	res, err := ctx.Call(c.Context.JsaValidate, false, map[string]interface{}{"state": ctx.State, "sync": true, "obj": obj.Object, "op": operation})
+	res, err := ctx.Call(c.Context.JsaValidate, false, map[string]interface{}{"state": &ctx.State, "sync": true, "obj": obj.Object, "op": operation})
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +194,7 @@ func (c *AdmissionCode) Validate(operation admission.Operation, obj *unstructure
 
 func (c *AdmissionCode) Mutate(operation admission.Operation, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	ctx := c.Context
-	res, err := ctx.Call(c.Context.JsaMutate, false, map[string]interface{}{"state": ctx.State, "sync": true, "obj": obj.Object, "op": operation})
+	res, err := ctx.Call(c.Context.JsaMutate, false, map[string]interface{}{"state": &ctx.State, "sync": true, "obj": obj.Object, "op": operation})
 	if err != nil {
 		return nil, err
 	}

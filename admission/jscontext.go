@@ -3,6 +3,7 @@ package admission
 import (
 	"fmt"
 	"github.com/momiji/js-admissions-controller/logs"
+	"reflect"
 	"sync"
 
 	"github.com/dop251/goja"
@@ -118,24 +119,44 @@ func (c *JsContext) Call(fn *JsFunction, forceSync bool, values map[string]inter
 	}
 
 	// build args
+	var stateSource *map[string]interface{}
+	var stateObject goja.Value
 	args := []goja.Value{undefined, undefined, undefined, undefined, undefined}
 	for n, v := range values {
-		args[fn.Params[n]] = c.Runtime.ToValue(v)
+		if n == "state" {
+			// special case with state, we keep ptr to the map
+			// and keep object for later export
+			forceSync = true
+			stateSource = v.(*map[string]interface{})
+			stateObject = ToGojaObject(c.Runtime, *stateSource)
+			args[fn.Params[n]] = stateObject
+		} else {
+			args[fn.Params[n]] = ToGojaObject(c.Runtime, v)
+		}
 	}
 	args[0] = undefined
 
 	// lock if sync is needed
-	_, sync := fn.Params["sync"]
-	sync = sync || forceSync
-	if sync {
+	_, withSync := fn.Params["sync"]
+	withSync = withSync || forceSync
+	if withSync {
 		c.mux.Lock()
-		defer c.mux.Unlock()
 	}
+	defer func() {
+		if withSync {
+			c.mux.Unlock()
+		}
+	}()
 
 	// call javascript func
 	res, err := fn.Func(goja.Undefined(), args[1:]...)
 	if err != nil {
 		return nil, err
+	}
+
+	// restore state if it was present
+	if stateSource != nil {
+		*stateSource = stateObject.Export().(map[string]interface{})
 	}
 	return res, nil
 }
@@ -157,4 +178,32 @@ func ToUnstructured(obj interface{}) *unstructured.Unstructured {
 	}
 
 	return &unstructured.Unstructured{Object: m}
+}
+
+func ToGojaObject(r *goja.Runtime, value any) goja.Value {
+	if value == nil {
+		return r.ToValue(value)
+	}
+	t := reflect.TypeOf(value)
+	switch t.Kind() {
+	case reflect.Slice, reflect.Array:
+		v := reflect.ValueOf(value)
+		a := make([]interface{}, v.Len())
+		for i := 0; i < v.Len(); i++ {
+			a[i] = ToGojaObject(r, v.Index(i).Interface())
+		}
+		return r.NewArray(a...)
+	case reflect.Map:
+		v := reflect.ValueOf(value)
+		o := r.NewObject()
+		iter := v.MapRange()
+		for iter.Next() {
+			//key := iter.Key().Interface().(string)
+			//val := iter.Value().Interface()
+			//println(key, val)
+			_ = o.Set(iter.Key().Interface().(string), ToGojaObject(r, iter.Value().Interface()))
+		}
+		return o
+	}
+	return r.ToValue(value)
 }
