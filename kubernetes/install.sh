@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 cd "$(dirname "$0")"
 
-HOSTNAME=devlinux
+HOSTNAME=$(hostname -s)
 SERVICE=jsadmissions.kube-jsadmissions.svc
 DOCKER=$( which podman &> /dev/null && echo podman || echo docker )
 
