@@ -1,3 +1,10 @@
+## [1.0.6](https://github.com/momiji/js-admissions-controller/compare/v1.0.5...v1.0.6) (2023-05-25)
+
+
+### Bug Fixes
+
+* force new release ([ca7b370](https://github.com/momiji/js-admissions-controller/commit/ca7b3704b845fcead7d76478817b1f0697dc2edb))
+
 ## [1.0.5](https://github.com/momiji/js-admissions-controller/compare/v1.0.4...v1.0.5) (2023-05-25)
 
 
