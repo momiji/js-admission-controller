@@ -6,6 +6,7 @@ replace github.com/snorwin/jsonpatch => ./jsonpatch
 
 require (
 	github.com/dop251/goja v0.0.0-20230427124612-428fc442ff5f
+	github.com/jolestar/go-commons-pool/v2 v2.1.2
 	github.com/snorwin/jsonpatch v1.4.0
 	github.com/spf13/pflag v1.0.5
 	k8s.io/api v0.27.1

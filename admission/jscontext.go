@@ -1,15 +1,26 @@
 package admission
 
 import (
+	"context"
 	"fmt"
 	"github.com/momiji/js-admissions-controller/logs"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"reflect"
 	"sync"
 
 	"github.com/dop251/goja"
 	"github.com/dop251/goja/ast"
 	"github.com/dop251/goja/parser"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"github.com/jolestar/go-commons-pool/v2"
+)
+
+const (
+	JsaInit     = "jsa_init"
+	JsaMutate   = "jsa_mutate"
+	JsaValidate = "jsa_validate"
+	JsaCreated  = "jsa_created"
+	JsaUpdated  = "jsa_updated"
+	JsaDeleted  = "jsa_deleted"
 )
 
 var (
@@ -17,17 +28,16 @@ var (
 )
 
 type JsContext struct {
-	mux         *sync.Mutex
-	Program     *ast.Program
-	Compiled    *goja.Program
-	Runtime     *goja.Runtime
-	State       map[string]interface{}
-	JsaInit     *JsFunction
-	JsaMutate   *JsFunction
-	JsaValidate *JsFunction
-	JsaCreated  *JsFunction
-	JsaUpdated  *JsFunction
-	JsaDeleted  *JsFunction
+	mux      *sync.RWMutex
+	program  *ast.Program
+	compiled *goja.Program
+	State    map[string]interface{}
+	pool     *pool.ObjectPool
+}
+
+type JsRuntime struct {
+	Runtime *goja.Runtime
+	Methods map[string]*JsFunction
 }
 
 type JsFunction struct {
@@ -37,51 +47,80 @@ type JsFunction struct {
 
 func NewJsContext(name string, js string) (*JsContext, error) {
 	// compile code
-	prg, err := goja.Parse("", js, parser.WithDisableSourceMaps)
+	program, err := goja.Parse("", js, parser.WithDisableSourceMaps)
 	if err != nil {
 		return nil, err
 	}
 
-	ast, err := goja.CompileAST(prg, false)
+	compiled, err := goja.CompileAST(program, false)
 	if err != nil {
 		return nil, err
 	}
 
-	// create runtime
-	runtime := goja.New()
-	runtime.RunProgram(ast)
+	// create pool factory
+	factory := pool.NewPooledObjectFactorySimple(func(ctx context.Context) (interface{}, error) {
+		// create runtime
+		runtime := goja.New()
+		_, err := runtime.RunProgram(compiled)
+		if err != nil {
+			return nil, err
+		}
+
+		// add runtime utils
+		err = runtime.Set("log", func(a ...interface{}) {
+			logs.Infof("js(%s) %s\n", name, fmt.Sprint(a...))
+		})
+		if err != nil {
+			return nil, err
+		}
+		err = runtime.Set("logf", func(f string, a ...interface{}) {
+			logs.Infof("js(%s) %s\n", name, fmt.Sprintf(f, a...))
+		})
+		if err != nil {
+			return nil, err
+		}
+		err = runtime.Set("debug", func(a ...interface{}) {
+			logs.Debugf("js(%s) %s\n", name, fmt.Sprint(a...))
+		})
+		if err != nil {
+			return nil, err
+		}
+		err = runtime.Set("debugf", func(f string, a ...interface{}) {
+			logs.Debugf("js(%s) %s\n", name, fmt.Sprintf(f, a...))
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// return
+		// TODO potential optimization? compute params in JsContext, so only Get(function_name) remains
+		return &JsRuntime{
+			Runtime: runtime,
+			Methods: map[string]*JsFunction{
+				JsaInit:     analyseFunction(runtime, program, JsaInit, "state"),
+				JsaMutate:   analyseFunction(runtime, program, JsaMutate, "state", "sync", "obj", "op"),
+				JsaValidate: analyseFunction(runtime, program, JsaValidate, "state", "sync", "obj", "op"),
+				JsaCreated:  analyseFunction(runtime, program, JsaCreated, "state", "sync", "obj"),
+				JsaUpdated:  analyseFunction(runtime, program, JsaUpdated, "state", "sync", "obj", "old"),
+				JsaDeleted:  analyseFunction(runtime, program, JsaDeleted, "state", "sync", "obj"),
+			},
+		}, nil
+	})
+
+	// create pool
+	p := pool.NewObjectPoolWithDefaultConfig(context.Background(), factory)
 
 	// create context
-	context := JsContext{
-		mux:         &sync.Mutex{},
-		Program:     prg,
-		Compiled:    ast,
-		Runtime:     runtime,
-		State:       make(map[string]interface{}),
-		JsaInit:     analyseFunction(runtime, prg, "jsa_init", "state"),
-		JsaMutate:   analyseFunction(runtime, prg, "jsa_mutate", "state", "sync", "obj", "op"),
-		JsaValidate: analyseFunction(runtime, prg, "jsa_validate", "state", "sync", "obj", "op"),
-		JsaCreated:  analyseFunction(runtime, prg, "jsa_created", "state", "sync", "obj"),
-		JsaUpdated:  analyseFunction(runtime, prg, "jsa_updated", "state", "sync", "obj", "old"),
-		JsaDeleted:  analyseFunction(runtime, prg, "jsa_deleted", "state", "sync", "obj"),
+	ctx := JsContext{
+		mux:      &sync.RWMutex{},
+		program:  program,
+		compiled: compiled,
+		State:    make(map[string]interface{}),
+		pool:     p,
 	}
 
-	// add runtime utils
-	runtime.Set("log", func(a ...interface{}) {
-		logs.Infof("js(%s) %s\n", name, fmt.Sprint(a...))
-	})
-	runtime.Set("logf", func(f string, a ...interface{}) {
-		logs.Infof("js(%s) %s\n", name, fmt.Sprintf(f, a...))
-	})
-	runtime.Set("debug", func(a ...interface{}) {
-		logs.Debugf("js(%s) %s\n", name, fmt.Sprint(a...))
-	})
-	runtime.Set("debugf", func(f string, a ...interface{}) {
-		logs.Debugf("js(%s) %s\n", name, fmt.Sprintf(f, a...))
-	})
-
 	// return
-	return &context, nil
+	return &ctx, nil
 }
 
 func analyseFunction(runtime *goja.Runtime, prg *ast.Program, name string, parameters ...string) *JsFunction {
@@ -113,7 +152,20 @@ func analyseFunction(runtime *goja.Runtime, prg *ast.Program, name string, param
 	return nil
 }
 
-func (c *JsContext) Call(fn *JsFunction, forceSync bool, values map[string]interface{}) (goja.Value, error) {
+func (c *JsContext) Call(method string, forceSync bool, values map[string]interface{}) (goja.Value, error) {
+	background := context.Background()
+	object, err := c.pool.BorrowObject(background)
+	if err != nil {
+		return nil, err
+	}
+	defer func(pool *pool.ObjectPool, ctx context.Context, object interface{}) {
+		_ = pool.ReturnObject(ctx, object)
+	}(c.pool, background, object)
+	runtime := object.(*JsRuntime)
+	return c.call(runtime.Runtime, runtime.Methods[method], forceSync, values)
+}
+
+func (c *JsContext) call(runtime *goja.Runtime, fn *JsFunction, forceSync bool, values map[string]interface{}) (goja.Value, error) {
 	if fn == nil {
 		return nil, nil
 	}
@@ -121,32 +173,32 @@ func (c *JsContext) Call(fn *JsFunction, forceSync bool, values map[string]inter
 	// build args
 	var stateSource *map[string]interface{}
 	var stateObject goja.Value
+	withState := false
 	args := []goja.Value{undefined, undefined, undefined, undefined, undefined}
 	for n, v := range values {
 		if n == "state" {
+			withState = true
 			// special case with state, we keep ptr to the map
 			// and keep object for later export
-			forceSync = true
 			stateSource = v.(*map[string]interface{})
-			stateObject = ToGojaObject(c.Runtime, *stateSource)
+			stateObject = ToGojaObject(runtime, *stateSource)
 			args[fn.Params[n]] = stateObject
 		} else {
-			args[fn.Params[n]] = ToGojaObject(c.Runtime, v)
+			args[fn.Params[n]] = ToGojaObject(runtime, v)
 		}
 	}
 	args[0] = undefined
 
-	// lock if sync is needed
+	// lock RW (if sync || forceSync), R (if state)
 	_, withSync := fn.Params["sync"]
 	withSync = withSync || forceSync
 	if withSync {
 		c.mux.Lock()
+		defer c.mux.Unlock()
+	} else if withState {
+		c.mux.RLock()
+		defer c.mux.RUnlock()
 	}
-	defer func() {
-		if withSync {
-			c.mux.Unlock()
-		}
-	}()
 
 	// call javascript func
 	res, err := fn.Func(goja.Undefined(), args[1:]...)
@@ -155,7 +207,7 @@ func (c *JsContext) Call(fn *JsFunction, forceSync bool, values map[string]inter
 	}
 
 	// restore state if it was present
-	if stateSource != nil {
+	if withState {
 		*stateSource = stateObject.Export().(map[string]interface{})
 	}
 	return res, nil

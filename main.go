@@ -24,6 +24,14 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+const (
+	GroupCrd   = "momiji.com"
+	VersionCrd = "v1"
+
+	ClusterCrd   = GroupCrd + "/" + VersionCrd + "/clusterjsadmissions"
+	NamespaceCrd = GroupCrd + "/" + VersionCrd + "/jsadmissions"
+)
+
 var (
 	clusterConfig     *rest.Config
 	clusterClient     *dynamic.DynamicClient
