@@ -22,7 +22,7 @@ spec:
       automountServiceAccountToken: true
       containers:
         - name: jsadmissions
-          image: momijix/js-admissions-controller:1.0.6
+          image: momijix/js-admissions-controller:1.1.1
           imagePullPolicy: IfNotPresent
           env:
             - name: ENV_JSA_VERBOSE
