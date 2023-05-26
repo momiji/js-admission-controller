@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/momiji/js-admissions-controller/compare/v1.0.6...v1.1.0) (2023-05-26)
+
+
+### Features
+
+* add jsadmissions.momiji.com/mutate annotation ([fc868e0](https://github.com/momiji/js-admissions-controller/commit/fc868e02886f07c119b344bcf11623170561a61d))
+
 ## [1.0.6](https://github.com/momiji/js-admissions-controller/compare/v1.0.5...v1.0.6) (2023-05-25)
 
 
