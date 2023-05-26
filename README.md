@@ -1,9 +1,101 @@
-# js-admissions-controller
+# Kubernetes admission webhooks made easy in Javascript
 
-This controller is an admission webhook with the following features:
-- admission rules (mutate, validate) are defined in CRD (`CustomResourceDefinitions`)
-- CRD can be defined at cluster level (`ClusterJsAdmissions`) or namespace level (`JsAdmissions`)
-- mutations and validations are coded in javascript, allowing fast development and deployment
+Ever wanted to create you own admission webhook?
+<br>
+Don't have time to create your own webhook in golang, or python?
+
+This project provides javascript admission webhooks to your kubernetes clusters:
+- develop your admission rules in Javascript
+- deploy your admission rules using Custom Resource Definitions
+- choose between namespace and cluster scope using `JsAdmission` or `ClusterJsAdmission`
+
+Adding custom webhooks is now as easy as adding a new object in Kubernetes:
+
+```yaml
+apiVersion: momiji.com/v1
+kind: ClusterJsAdmission
+metadata:
+  name: sample-add-annotations
+spec:
+  kinds:
+    - pods
+  js: |
+    function jsa_mutate(op, obj, sync, state) {
+      if (op != "CREATE") return;
+      if (obj.metadata.annotations == null)
+        obj.metadata.annotations = {}
+      obj.metadata.annotations["jsadmissions/sample-add-annotation"] = new Date().toISOString()
+      return { Allowed: true, Result: obj }
+    }
+```
+
+## Installation
+
+### Clone the project
+
+You need to clone the project or copy files from `kubernetes` folder.
+
+```sh
+$ git clone https://github.com/momiji/js-admissions-controller
+$ cd js-admissions-controller
+```
+
+### Configuration
+
+By default, the webhooks are deployed in the `kube-jsadmisions` namespace and only monitors `pods` creation.
+
+To change this default behavior, simply update the yaml files according to your requirements:
+- `kubernetes/crds.yaml` contains the two custom resource definitions JsAdmissions and ClusterJsAdmissions
+- `kubernetes/deploy.yaml` contains the deployment for the web hooks controller
+- `kubernetes/hooks.yaml` contains the default pod hooks for mutation and validation
+- `kubernetes/namespace.yaml` contains the namespace definition, default is `kube-jsadmissions`
+- `kubernetes/rbac.yaml` contains the RBAC to allow watching pods resources
+- `kubernetes/install.sh` contains a simple install script
+
+### Deploy the webhooks
+
+Either install the objects manually one by one or simply use the provided `install.sh` script:
+
+```sh
+$ ./kubernetes/install.sh
+```
+
+### Deploy you first admission
+
+```sh
+$ kubectl apply -f - <<EOF
+apiVersion: momiji.com/v1
+kind: ClusterJsAdmission
+metadata:
+  name: sample-add-annotations
+spec:
+  kinds:
+    - pods
+  js: |
+    function jsa_mutate(op, obj, sync, state) {
+      if (op != "CREATE") return;
+      if (obj.metadata.annotations == null)
+        obj.metadata.annotations = {}
+      obj.metadata.annotations["jsadmissions/sample-add-annotation"] = new Date().toISOString()
+      return { Allowed: true, Result: obj }
+    }
+EOF
+```
+
+### Other tests
+
+```sh
+$ ./tests/install.sh
+$ ./tests/pods.sh
+```
+
+To remove all objects except the CRD, simply delete `test-jsa` namespace:
+
+```sh
+$ kubectl delete namespace test-jsa
+$ kubectl delete validatingwebhookconfigurations.admissionregistration.k8s.io test-jsa 
+$ kubectl delete mutatingwebhookconfigurations.admissionregistration.k8s.io test-jsa 
+```
 
 ## A brief history
 
@@ -16,59 +108,6 @@ Unfortunately, taints are global to all pods on a node, which can impact other c
 To solve this problem, the first approach was to modify all the objects (pods, podtemplates, ...) generated in the installation phase (with kustomize), by updating their nodeAffinity/nodeSelector. But this requires to know in advance the exact list of all the objects that will be created by the operator in charge of the deployment.
 
 An alternative idea then came up: make the modifications at the creation of the pods, by developing a mutating admission webhook, and to facilitate the development and testing of the 150 pods to be changed, the code must be located elsewhere than in the webhook and coded in a dynamic language like javascript. 
-
-## Install
-
-Files:
-- `kubernetes/crds.yaml` contains the 2 custom resource definitions JsAdmissions and ClusterJsAdmissions
-- `kubernetes/deploy.yaml` contains the deployment for the web hooks controller
-- `kubernetes/hooks.yaml` contains the default pod hooks for mutation and validation
-- `kubernetes/namespace.yaml` contains the namespace definition, default is `kube-jsadmissions`
-- `kubernetes/rbac.yaml` contains the RBAC to allow watching pods resources
-- `kubernetes/install.sh` contains a simple install script
-
-### Configuration
-
-By default, the admission hook receives CREATE for pods on all namespaces.
-
-To add other apiGroups/versions:
-- update `kubernetes/hooks.yaml` to add additionnal apiGroups/versions or create a new file based on it
-- update `kubernetes/rbac.yaml` to add additionnal rules to watch or create a new file with new rules and bind the new roles to the `jsadmissions` service account
-
-### Certificates
-
-CA and certificates are automatically generated by the install script.
-
-Either update the script or provide your own certificates in the `kubernetes/certs` folder.
-
-### Deploy in Kubernetes
-
-Once all files are correcly updated, simply run the `./kubernetes/install.sh` script to perform installation.
-
-This script can also be used to update the configuration as well as upgrade the docker image version.
-
-### Tests
-
-It is possible to use test installation by using a simple admission:
-
-```sh
-$ kubectl create namespace test-jsa
-$ kubectl apply -f kubernetes/test-admission.yaml
-$ kubectl apply -f kubernetes/test-pods.yaml
-```
-
-```sh
-$ kubectl get pods -n test-jsa
-NAME               READY   STATUS    RESTARTS   AGE
-test-log           1/1     Running   0          9s
-test-log-pending   0/1     Pending   0          9s
-
-$ kubectl get pods -n test-jsa -o json | jq '.items[].metadata.annotations | to_entries[] | [.key,.value] | join("=")' -rc | grep ^jsa
-jsadmissions.momiji.com/date=2023-05-21T21:19:07.228Z
-jsadmissions.momiji.com/pods=1
-jsadmissions.momiji.com/date=2023-05-21T21:19:07.202Z
-jsadmissions.momiji.com/pods=0
-```
 
 ## Setup development environment
 
@@ -87,60 +126,52 @@ $ make docker
 $ make local
 ```
 
-Tests:
-
-```sh
-$ ./tests/install.sh
-$ ./tests/pods.sh
-```
-
-To remove all objects except the CRD, simply delete `test-jsa` namespace:
-
-```sh
-$ kubectl delete namespace test-jsa
-$ kubectl delete validatingwebhookconfigurations.admissionregistration.k8s.io test-jsa 
-$ kubectl delete mutatingwebhookconfigurations.admissionregistration.k8s.io test-jsa 
-```
-
 ## Javascript specification
+
+### Managed functions
 
 ```text
 // actions
 function jsa_mutate(op, obj, [sync], [state]) -> { Allowed: bool, Message: str, Result: obj }
 function jsa_validate(op, obj, [sync], [state]) -> { Allowed: bool, Message: str }
 
-// events
+// init
 function jsa_init([state])
+
+// events
 function jsa_created(obj, [sync], [state])
 function jsa_updated(obj, old, [sync], [state])
 function jsa_deleted(obj, [sync], [state])
 
 // utils
-function jsa_find(kind, namespace) -> [obj...]
 function jsa_debug(s...)
 function jsa_debugf(fmt, s...)
 function jsa_log(s...)
 function jsa_logf(fmt, s...)
 ```
 
-### Method names
+### Function names
 
-All plugin methods are prefixed by `jsa_`.
-It is recommended to avoid prefixing custom methods with jsa_ and consider it is reserved.
+Methods managed by the runtime are all prefixed by `jsa_`.
+<br>
+Do not use `jsa_` in your custom functions to prevent future issues while upgrading.
+
+A future release might implement a check to prevent using such prefix for user functions.
 
 ### Global variables
 
-It is best to prevent use of global variables to keep values across calls.
-Use the `state` object for this.
+Do not use global variables to keep data accross function calls, as they are probably run from different runtime instances.
+
+Use the `state` object for this, which is in read-only mode unless the `sync` parameter is also present in the function parameters, except for the `jsa_init(state)` function for which it is always synchronized.
 
 ### Known issues and solutions
 
-There are some known issues at this time:
-- array: push() is not working.
-  <br>Solution is to copy array into another variable, push new item(s) onto it, then copy back the variable.
-  <br>Example: `var a = obj.a; a.push(1); obj.a = a;`
+The Javascript runtime included in the webhook is [dop251/goja](https://github.com/dop251/goja), which provides an incomplete javascript implementation.
 
-## Javascript methods to implement
+There are some known issues with this runtime:
+- ~~arrays: push() is not working~~
+
+## Functions to implement
 
 For parameters:
 - names are case-sensitive
@@ -228,28 +259,27 @@ TODO
 
 ### Adding a new annotation to all pods
 
-In this example we want to add a new annotation `annotation.io/test: 1` to all pods.
+In this example we want to add a new annotation `jsadmissions/date` with the current date to all pods.
 
 Here, we simply need to:
 - implement `jsa_mutate` function to update the object
 
 ```js
-// entrypoints
 function jsa_mutate(op, obj) {
     if (op != "CREATE" || obj.kind !== "Pod") return;
     if (obj.metadata.annotations == null)
         obj.metadata.annotations = {};
-    obj.metadata.annotations["jsadmissions.momiji.com/date"] = "" + new Date().toISOString();
+    obj.metadata.annotations["jsadmissions/date"] = new Date().toISOString();
     return { Allowed: true, Result: obj };
 }
 ```
 
-### Limit the number of pods accross multiple namespaces
+### Limit the number of pods accross default-* namespaces
 
 In this example we want to count the number of pods created across multiple namespaces, to prevent going above a limit of 40 pods.
 
 Here, we would need to:
-- implement `jsa_init` function to initialize the value
+- implement `jsa_init` function to initialize the value to 0
 - implement `jsa_created` and `jsa_deleted` functions to update the value
 - implement `jsa_validate` to test and eventually prevent object creation when limit is reached
 - use `state` to store the number of existing pods
@@ -281,6 +311,7 @@ function jsa_validate(op, obj, sync, state) {
     }
     return;
 }
+
 // custom code
 var NAMESPACE_REGEX = /^default($|-)/;
 var POD_LIMIT = 40;
