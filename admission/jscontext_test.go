@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestJsContext_Ojects(t *testing.T) {
+func TestJsContext_Objects(t *testing.T) {
 	compile, err := goja.Compile("", `
 function test(obj, state) {
 	obj.a.push(3);
