@@ -1,6 +1,7 @@
 package admission
 
 import (
+	"fmt"
 	"sort"
 	"sync"
 
@@ -45,11 +46,7 @@ func newAdmissionList() *AdmissionList {
 }
 
 func newAdmissionCode(adm *Admission) (*AdmissionCode, error) {
-	name := adm.Name
-	if adm.Namespace != "" {
-		name = adm.Namespace + "/" + adm.Name
-	}
-	js, err := NewJsContext(name, adm.Javascript)
+	js, err := NewJsContext(adm.FullName(), adm.Javascript)
 	if err != nil {
 		return nil, err
 	}
@@ -58,6 +55,13 @@ func newAdmissionCode(adm *Admission) (*AdmissionCode, error) {
 		Context:   js,
 		IsValid:   false,
 	}, nil
+}
+
+func (a *Admission) FullName() string {
+	if a.Namespace == "" {
+		return a.Name
+	}
+	return fmt.Sprintf("%s.%s", a.Namespace, a.Name)
 }
 
 func (a *Admissions) Upsert(adm *Admission) (*AdmissionCode, error) {

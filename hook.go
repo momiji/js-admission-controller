@@ -3,16 +3,16 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-
 	"github.com/momiji/js-admissions-controller/logs"
 	"github.com/momiji/js-admissions-controller/utils"
 	"github.com/snorwin/jsonpatch"
+	"io"
 	admission "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"net/http"
+	"strings"
 )
 
 func serveMutate(w http.ResponseWriter, r *http.Request) {
@@ -107,6 +107,7 @@ func mutate(ar *admission.AdmissionReview) *admission.AdmissionResponse {
 	}
 	newUObj := &unstructured.Unstructured{Object: uObj.Object}
 	changed := false
+	mutations := make([]string, 0)
 
 	for _, code := range adms {
 		res, err := code.Mutate(ar.Request.Operation, newUObj.DeepCopy())
@@ -134,11 +135,13 @@ func mutate(ar *admission.AdmissionReview) *admission.AdmissionResponse {
 			if result != nil {
 				newUObj.Object = result
 				changed = true
+				mutations = append(mutations, code.Admission.FullName())
 			}
 		}
 	}
 
 	if changed {
+		unstructured.SetNestedField(newUObj.Object, "metadata.annotations", strings.Join(mutations, ","), "jsadmissions.momiji.com/mutate")
 		patch, err := jsonpatch.CreateJSONPatch(newUObj.Object, uObj.Object)
 		if err != nil {
 			return &admission.AdmissionResponse{
