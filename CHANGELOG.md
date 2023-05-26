@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/momiji/js-admissions-controller/compare/v1.1.0...v1.1.1) (2023-05-26)
+
+
+### Bug Fixes
+
+* jsadmissions.momiji.com/mutate annotation ([e596e2a](https://github.com/momiji/js-admissions-controller/commit/e596e2a4f33ff1eda5778aa9c18ff94b93011a8d))
+
 # [1.1.0](https://github.com/momiji/js-admissions-controller/compare/v1.0.6...v1.1.0) (2023-05-26)
 
 
