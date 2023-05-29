@@ -82,21 +82,6 @@ spec:
 EOF
 ```
 
-### Other tests
-
-```sh
-$ ./tests/install.sh
-$ ./tests/pods.sh
-```
-
-To remove all objects except the CRD, simply delete `test-jsa` namespace:
-
-```sh
-$ kubectl delete namespace test-jsa
-$ kubectl delete validatingwebhookconfigurations.admissionregistration.k8s.io test-jsa 
-$ kubectl delete mutatingwebhookconfigurations.admissionregistration.k8s.io test-jsa 
-```
-
 ## A brief history
 
 The idea for this project was born during the installation and configuration of SAS Viya4 for a customer.
@@ -111,19 +96,68 @@ An alternative idea then came up: make the modifications at the creation of the 
 
 ## Setup development environment
 
+2 scenarios have been tested:
+- k3s in docker, used to test the controller in a fresh new kubernetes node
+- microk8s, used for development
+
+> Using k3s requires some tricks to copy docker image into its internal registry, which is why it is only used for integration tests.
+
 Requirements:
 - ubuntu
-- docker (sudo apt install docker.io)
-- microk8s with registry addon (snap install microk8s)
-- kubectl (downloaded from )
-- jq (sudo apt install jq)
+- docker: `sudo apt install docker.io`
+- kubectl: see https://kubernetes.io/fr/docs/tasks/tools/install-kubectl/
+- jq: `sudo apt install jq`
 
-Buid and deploy image into microk8s registry:
+Optional:
+- microk8s with registry addon: `snap install microk8s ; microk8s enable registry`
+
+### Using k3s
+
+A full integration test can be performed on a docker k3s instance.
+It takes around 1 min to finish on my 6 years old laptop.
+
+```sh
+$ ./tests/test-k3s.sh
+```
+
+### Using microk8s
+
+Using microk8s is easier to use as its internal registry can be pushed from host using a simple `docker push` command.
+
+To build and copy image into microk8s registry:
 
 ```sh
 $ make
 $ make docker
 $ make local
+```
+
+To deploy:
+
+```sh
+$ ./tests/install.sh
+$ kubectl wait deployment -n test-jsa test-jsa --for condition=Available=True --timeout=90s
+```
+
+To test:
+```
+$ ./tests/pods.sh
+```
+
+To update controller:
+
+```sh
+$ make local
+$ kubectl rollout restart -n test-jsa deployment/test-jsa
+$ kubectl wait deployment -n test-jsa test-jsa --for condition=Available=True --timeout=90s
+```
+
+To remove all objects except the CRD, simply delete `test-jsa` namespace:
+
+```sh
+$ kubectl delete namespace test-jsa
+$ kubectl delete validatingwebhookconfigurations.admissionregistration.k8s.io test-jsa 
+$ kubectl delete mutatingwebhookconfigurations.admissionregistration.k8s.io test-jsa 
 ```
 
 ## Javascript specification
@@ -394,3 +428,22 @@ function jsa_mutate(obj) {
     return { Allowed: true, Result: obj };
 }
 ```
+
+## Notes
+
+### Admissions execution order
+
+By design, namespace admissions are executed **before** cluster admissions, in name order.
+This way, cluster mutations have higher priority than namespace admissions.
+
+However, if you have security concerns, the good practice is to implement validations in addition to mutations.
+
+### Webhooks configuration
+
+There should be no reason to have more than one webhook for namespaces and for clustered admissions.
+Doing so may result in admissions been executed several times, which should not be what is expected.
+
+### Limit admissions kinds
+
+If you need to prevent namespace admissions to mutate/validate some resources,
+you might want to add cluster admissions to validate the creation and modification of JsAdmissions.
