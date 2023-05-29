@@ -147,6 +147,9 @@ func (w *Watcher) UnlockResource(resource string) {
 }
 
 // GetResources return all resources with the same namespace or for all namespaces if namespace=""
+//
+// For a namespace resource (like pods), only resources for this namespace are returned if a namespace is provided, else all resources for all namespaces are returned.
+// For a cluster resource (like clusterroles), all resources are returned, as the namespace should be empty.
 func (w *Watcher) GetResources(resource string, namespace string) []*unstructured.Unstructured {
 	return w.store.Find(resource, namespace)
 }

@@ -39,21 +39,26 @@ func TestCache_Find(t *testing.T) {
 	cache.Add("a", "", "a1", &unstructured.Unstructured{})
 	cache.Add("a", "", "a2", &unstructured.Unstructured{})
 	cache.Add("b", "ns1", "b1", &unstructured.Unstructured{})
-	cache.Add("b", "ns2", "b2", &unstructured.Unstructured{})
+	cache.Add("b", "ns1", "b2", &unstructured.Unstructured{})
+	cache.Add("b", "ns3", "b2", &unstructured.Unstructured{})
 
-	// check cluster wide Find
+	// check Find(*) for a cluster resource returns 2 items (all resources)
 	if len(cache.Find("a", "")) != 2 {
 		t.Fatalf("failed")
 	}
-	if len(cache.Find("b", "")) != 2 {
+
+	// check Find(*) for a namespace resource returns 3 items (all resources)
+	if len(cache.Find("b", "")) != 3 {
 		t.Fatalf("failed")
 	}
 
-	// check namespace Find
+	// check Find(ns) for a cluster resource return 0 items
 	if len(cache.Find("a", "ns1")) != 0 {
 		t.Fatalf("failed")
 	}
-	if len(cache.Find("b", "ns1")) != 1 {
+
+	// check Find(ns) for a namespace resource returns 2 item (resources in the namespace)
+	if len(cache.Find("b", "ns1")) != 2 {
 		t.Fatalf("failed")
 	}
 }

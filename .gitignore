@@ -3,3 +3,5 @@
 *~
 /js-admissions-controller
 certs/
+/tests/jsa.tgz
+/tests/k3s.config

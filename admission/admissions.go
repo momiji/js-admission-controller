@@ -102,7 +102,10 @@ func (a *Admissions) Remove(namespace string, name string) {
 	delete(list.admissions, name)
 }
 
-// Find return admissions for current namespace and cluster if namespace != ""
+// Find returns admissions for current namespace and cluster if namespace != "".
+//
+// For a namespace resource (like pods), all admissions for this namespace and for the cluster are returned.
+// For a cluster resource (like clusterroles), only admissions for the cluster are returned.
 func (a *Admissions) Find(resource string, namespace string) []*AdmissionCode {
 	//TODO potential optimization? put a cache in place
 	a.mux.RLock()
