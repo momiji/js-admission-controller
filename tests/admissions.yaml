@@ -49,6 +49,7 @@ spec:
     }
     function jsa_mutate(op, obj, sync, state) {
       if (op != "CREATE") return;
+      log("test-jsa mutate: ", obj.metadata.namespace, " ", obj.metadata.name, " ", obj.metadata.resourceVersion)
       if (obj.metadata.annotations == null)
         obj.metadata.annotations = {}
       obj.metadata.annotations["jsadmissions.momiji.com/pods"] = "" + state.pods
