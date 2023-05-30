@@ -141,7 +141,7 @@ func mutate(ar *admission.AdmissionReview) *admission.AdmissionResponse {
 	}
 
 	if changed {
-		unstructured.SetNestedField(newUObj.Object, strings.Join(mutations, ","), "metadata", "annotations", "jsadmissions.momiji.com/mutate")
+		_ = unstructured.SetNestedField(newUObj.Object, strings.Join(mutations, ","), "metadata", "annotations", "jsadmissions.momiji.com/mutate")
 		patch, err := jsonpatch.CreateJSONPatch(newUObj.Object, uObj.Object)
 		if err != nil {
 			return &admission.AdmissionResponse{

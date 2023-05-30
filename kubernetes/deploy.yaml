@@ -48,7 +48,7 @@ spec:
               name: certs
               readOnly: true
       restartPolicy: Always
-      serviceAccount: jsadmissions
+      serviceAccountName: jsadmissions
       volumes:
         - name: certs
           secret:

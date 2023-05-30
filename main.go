@@ -176,7 +176,7 @@ func main() {
 	os.Exit(0)
 }
 
-func admissionHandler(action int, obj *unstructured.Unstructured, old *unstructured.Unstructured) {
+func admissionHandler(action int, obj *unstructured.Unstructured, _ *unstructured.Unstructured) {
 	gvk := utils.GVKToString(obj.GroupVersionKind())
 	ns := obj.GetNamespace()
 	name := obj.GetName()
@@ -212,7 +212,11 @@ func admissionHandler(action int, obj *unstructured.Unstructured, old *unstructu
 
 	// watch new resources
 	for _, resource := range watch {
-		resourcesWatcher.Add(resource)
+		err := resourcesWatcher.Add(resource)
+		if err != nil {
+			logs.Errorf("Admissions: failed to add %s ns=%s name=%s kinds=%v: %v", gvk, ns, name, res, err)
+			return
+		}
 	}
 
 	// we need to lock all resources to prevent losing them during initialisation from informer
@@ -263,11 +267,11 @@ func resourceHandler(action int, obj *unstructured.Unstructured, old *unstructur
 	for _, code := range admissions.Find(gvk, obj.GetNamespace()) {
 		switch action {
 		case watcher.CREATED:
-			code.Created(obj)
+			_ = code.Created(obj)
 		case watcher.UPDATED:
-			code.Updated(obj, old)
+			_ = code.Updated(obj, old)
 		case watcher.DELETED:
-			code.Deleted(obj)
+			_ = code.Deleted(obj)
 		}
 	}
 }

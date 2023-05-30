@@ -28,20 +28,20 @@ type Watcher struct {
 	locks     map[string]*sync.Mutex
 	ctx       context.Context
 	factory   dynamicinformer.DynamicSharedInformerFactory
-	store     *store.Cache
+	items     *store.Cache
 	handler   cache.ResourceEventHandlerFuncs
 	informers map[schema.GroupVersionResource]cache.SharedIndexInformer
 }
 
 func NewWatcher(ctx context.Context, client dynamic.Interface, action func(action int, obj *unstructured.Unstructured, old *unstructured.Unstructured)) *Watcher {
 	factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(client, time.Minute, corev1.NamespaceAll, nil)
-	store := store.NewCache()
+	items := store.NewCache()
 	watcher := &Watcher{
 		mux:       sync.Mutex{},
 		locks:     make(map[string]*sync.Mutex),
 		ctx:       ctx,
 		factory:   factory,
-		store:     store,
+		items:     items,
 		informers: make(map[schema.GroupVersionResource]cache.SharedIndexInformer),
 	}
 	watcher.handler = cache.ResourceEventHandlerFuncs{
@@ -55,7 +55,7 @@ func NewWatcher(ctx context.Context, client dynamic.Interface, action func(actio
 			watcher.LockResource(gvk)
 			defer watcher.UnlockResource(gvk)
 			logs.Tracef("Cache: add item %s ns=%s name=%s", gvk, item.GetNamespace(), item.GetName())
-			store.Add(gvk, item.GetNamespace(), item.GetName(), item)
+			items.Add(gvk, item.GetNamespace(), item.GetName(), item)
 			if action != nil {
 				action(CREATED, item, nil)
 			}
@@ -81,7 +81,7 @@ func NewWatcher(ctx context.Context, client dynamic.Interface, action func(actio
 			watcher.LockResource(gvk)
 			defer watcher.UnlockResource(gvk)
 			logs.Tracef("Cache: update item %s ns=%s name=%s", gvk, newItem.GetNamespace(), newItem.GetName())
-			store.Add(gvk, newItem.GetNamespace(), newItem.GetName(), newItem)
+			items.Add(gvk, newItem.GetNamespace(), newItem.GetName(), newItem)
 			if action != nil {
 				action(UPDATED, newItem, oldItem)
 			}
@@ -96,7 +96,7 @@ func NewWatcher(ctx context.Context, client dynamic.Interface, action func(actio
 			watcher.LockResource(gvk)
 			defer watcher.UnlockResource(gvk)
 			logs.Tracef("Cache: delete item item %s ns=%s name=%s", gvk, item.GetNamespace(), item.GetName())
-			store.Remove(gvk, item.GetNamespace(), item.GetName())
+			items.Remove(gvk, item.GetNamespace(), item.GetName())
 			if action != nil {
 				action(DELETED, item, nil)
 			}
@@ -117,7 +117,10 @@ func (w *Watcher) Add(gvr schema.GroupVersionResource) error {
 	}
 
 	informer = w.factory.ForResource(gvr).Informer()
-	informer.AddEventHandler(w.handler)
+	_, err := informer.AddEventHandler(w.handler)
+	if err != nil {
+		return fmt.Errorf("failed loading resources %s: %v", utils.GVRToString(gvr), err)
+	}
 	w.informers[gvr] = informer
 
 	// start loading resources
@@ -151,5 +154,5 @@ func (w *Watcher) UnlockResource(resource string) {
 // For a namespace resource (like pods), only resources for this namespace are returned if a namespace is provided, else all resources for all namespaces are returned.
 // For a cluster resource (like clusterroles), all resources are returned, as the namespace should be empty.
 func (w *Watcher) GetResources(resource string, namespace string) []*unstructured.Unstructured {
-	return w.store.Find(resource, namespace)
+	return w.items.Find(resource, namespace)
 }

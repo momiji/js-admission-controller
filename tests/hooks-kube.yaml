@@ -102,7 +102,7 @@ spec:
               name: certs
               readOnly: true
       restartPolicy: Always
-      serviceAccount: test-jsa
+      serviceAccountName: test-jsa
       volumes:
         - name: certs
           secret:
