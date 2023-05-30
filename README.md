@@ -100,15 +100,11 @@ An alternative idea then came up: make the modifications at the creation of the 
 - k3s in docker, used to test the controller in a fresh new kubernetes node
 - microk8s, used for development
 
-> Using k3s requires some tricks to copy docker image into its internal registry, which is why it is only used for integration tests.
-
 Requirements:
 - ubuntu
 - docker: `sudo apt install docker.io`
-- kubectl: see https://kubernetes.io/fr/docs/tasks/tools/install-kubectl/
 - jq: `sudo apt install jq`
-
-Optional:
+- kubectl: see https://kubernetes.io/fr/docs/tasks/tools/install-kubectl/
 - microk8s with registry addon: `snap install microk8s ; microk8s enable registry`
 
 ### Using k3s

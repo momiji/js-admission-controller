@@ -4,22 +4,32 @@ cd "$(dirname "$0")"
 
 docker stop jsa-k3s --time 0 ||:
 docker kill jsa-k3s ||:
+sleep 1
 
 # start k3s in docker
 docker run --rm -d --name jsa-k3s --hostname jsa-k3s --privileged -p 6443:6443 -p 32000:32000 rancher/k3s:v1.24.10-k3s1 server
 
-# wait for node to be ready
-i=10
-while ((i-->0)) ; do
+# wait for config
+i=60
+while ((i-->1)) ; do
   sleep 1
-  docker exec jsa-k3s kubectl wait node jsa-k3s --for condition=Ready=True --timeout=90s || continue
-  docker exec jsa-k3s kubectl wait deployment -n kube-system metrics-server --for condition=Available=True --timeout=90s || continue
+  docker exec jsa-k3s kubectl config view | sed -n /REDACTED/p | tail -1 | grep -q . || continue
   break
 done
 [ $i -ne 0 ]
-
-# extract kube config.yaml
 docker exec jsa-k3s kubectl config view --raw > k3s.config
+export KUBECONFIG=k3s.config
+
+# wait for node to be ready
+i=60
+while ((i-->1)) ; do
+  sleep 1
+  kubectl wait node jsa-k3s --for condition=Ready=True --timeout=90s || continue
+  kubectl wait deployment -n kube-system metrics-server --for condition=Available=True --timeout=90s || continue
+  #kubectl get deployment -n kube-system metrics-server -o json | jq .status.availableReplicas | grep -q "1$" || continue
+  break
+done
+[ $i -ne 0 ]
 
 # add registry
 kubectl create deployment -n kube-system registry --image=registry --port 5000
@@ -29,14 +39,8 @@ kubectl create service loadbalancer -n kube-system registry --tcp 32000:5000
 kubectl wait deployment -n kube-system registry --for condition=Available=True --timeout=90s
 kubectl wait deployment -n kube-system metrics-server --for condition=Available=True --timeout=90s
 
-# test kube config
-export KUBECONFIG=k3s.config
-
-# push image
-( cd .. && make docker )
-docker save localhost:32000/js-admissions-controller:latest | gzip > jsa.tgz
-IP=$( docker inspect jsa-k3s | jq '.[].NetworkSettings.IPAddress' -r )
-docker run --rm -it -v $PWD/jsa.tgz:/jsa.tgz:ro ananace/skopeo copy docker-archive:/jsa.tgz docker://$IP:32000/js-admissions-controller:latest --dest-tls-verify=false
+# push image - if it fails, this might be issue on ipv6 enabled?
+( cd .. && make local )
 
 # run install
 ./install.sh
