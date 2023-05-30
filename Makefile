@@ -1,12 +1,13 @@
 BIN 	= js-admissions-controller
 SRC 	= $(shell find -type f -name '*.go')
 DOCKER	= $(shell bash -c 'which podman &> /dev/null && echo podman || echo docker' )
+RELEASE = $(shell date)
 
 .PHONY: all
 all: $(BIN)
 
 $(BIN): $(SRC)
-	go build -o $(BIN)
+	go build -o $(BIN) -ldflags="-w -s -X 'main.Version=$(RELEASE)'"
 
 .PHONY: run
 run: $(BIN)

@@ -89,6 +89,9 @@ func main() {
 		os.Exit(0)
 	}
 
+	// show version
+	logs.Infof("Version: %s", Version)
+
 	// loading kube config
 	kubeConfig := os.Getenv("KUBECONFIG")
 	if kubeConfig != "" {
