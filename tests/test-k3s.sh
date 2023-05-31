@@ -7,13 +7,13 @@ docker kill jsa-k3s ||:
 sleep 1
 
 # start k3s in docker
-docker run --rm -d --name jsa-k3s --hostname jsa-k3s --privileged -p 6443:6443 -p 32000:32000 rancher/k3s:v1.24.10-k3s1 server
+docker run --rm -d --name jsa-k3s --hostname jsa-k3s --privileged -p 6443:6443 -p 32000:32000 rancher/k3s:v1.27.2-k3s1 server --disable=traefik --disable=metrics-server --disable=local-storage --disable=coredns
 
 # wait for config
 i=60
 while ((i-->1)) ; do
   sleep 1
-  docker exec jsa-k3s kubectl config view | sed -n /REDACTED/p | tail -1 | grep -q . || continue
+  docker exec jsa-k3s kubectl config view | sed -n /DATA/p | tail -1 | grep -q . || continue
   break
 done
 [ $i -ne 0 ]
@@ -25,8 +25,6 @@ i=60
 while ((i-->1)) ; do
   sleep 1
   kubectl wait node jsa-k3s --for condition=Ready=True --timeout=90s || continue
-  kubectl wait deployment -n kube-system metrics-server --for condition=Available=True --timeout=90s || continue
-  #kubectl get deployment -n kube-system metrics-server -o json | jq .status.availableReplicas | grep -q "1$" || continue
   break
 done
 [ $i -ne 0 ]
@@ -37,7 +35,6 @@ kubectl create service loadbalancer -n kube-system registry --tcp 32000:5000
 
 # all waits
 kubectl wait deployment -n kube-system registry --for condition=Available=True --timeout=90s
-kubectl wait deployment -n kube-system metrics-server --for condition=Available=True --timeout=90s
 
 # push image - if it fails, this might be issue on ipv6 enabled?
 ( cd .. && make local )
