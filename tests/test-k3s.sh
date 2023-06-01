@@ -57,7 +57,7 @@ kubectl create service loadbalancer -n kube-system registry --tcp 32000:5000
 
 # all waits
 kubectl wait deployment -n kube-system registry --for condition=Available=True --timeout=90s
-sleep 1
+sleep 2
 
 echo
 echo "********************************************************************************"

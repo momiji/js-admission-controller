@@ -20,6 +20,7 @@ type Admission struct {
 	Name       string
 	Resources  []string
 	Javascript string
+	Timeout    int
 }
 
 type AdmissionList struct {
@@ -46,7 +47,7 @@ func newAdmissionList() *AdmissionList {
 }
 
 func newAdmissionCode(adm *Admission) (*AdmissionCode, error) {
-	js, err := NewJsContext(adm.FullName(), adm.Javascript)
+	js, err := NewJsContext(adm.FullName(), adm.Javascript, adm.Timeout)
 	if err != nil {
 		return nil, err
 	}

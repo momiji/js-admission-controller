@@ -29,6 +29,8 @@ spec:
               value: "false"
             - name: ENV_JSA_TRACE
               value: "false"
+            - name: ENV_JSA_TIMEOUT
+              value: "10"
           ports:
             - name: https
               containerPort: 8043

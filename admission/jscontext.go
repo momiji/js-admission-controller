@@ -7,6 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"reflect"
 	"sync"
+	"time"
 
 	"github.com/dop251/goja"
 	"github.com/dop251/goja/ast"
@@ -33,6 +34,7 @@ type JsContext struct {
 	compiled *goja.Program
 	State    map[string]interface{}
 	pool     *pool.ObjectPool
+	timeout  int
 }
 
 type JsRuntime struct {
@@ -45,7 +47,7 @@ type JsFunction struct {
 	Params map[string]int
 }
 
-func NewJsContext(name string, js string) (*JsContext, error) {
+func NewJsContext(name string, js string, timeout int) (*JsContext, error) {
 	// compile code
 	program, err := goja.Parse("", js, parser.WithDisableSourceMaps)
 	if err != nil {
@@ -117,6 +119,7 @@ func NewJsContext(name string, js string) (*JsContext, error) {
 		compiled: compiled,
 		State:    make(map[string]interface{}),
 		pool:     p,
+		timeout:  timeout,
 	}
 
 	// return
@@ -201,7 +204,11 @@ func (c *JsContext) call(runtime *goja.Runtime, fn *JsFunction, forceSync bool, 
 	}
 
 	// call javascript func
+	timer := time.AfterFunc(time.Second*time.Duration(c.timeout), func() {
+		runtime.Interrupt(nil)
+	})
 	res, err := fn.Func(goja.Undefined(), args[1:]...)
+	timer.Stop()
 	if err != nil {
 		return nil, err
 	}

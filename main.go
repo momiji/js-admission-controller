@@ -39,6 +39,7 @@ var (
 	admissions        *admission.Admissions
 	resourcesWatcher  *watcher.Watcher
 	admissionsWatcher *watcher.Watcher
+	timeout           int
 	Version           = "dev"
 )
 
@@ -60,6 +61,7 @@ func main() {
 	pflag.BoolVarP(&showHelp, "help", "h", false, "Show help")
 	pflag.BoolVarP(&logs.DebugMode, "verbose", "v", false, "Verbose mode (with javascript logs)")
 	pflag.BoolVarP(&logs.TraceMode, "debug", "d", false, "Debug mode (all logs))")
+	pflag.IntVar(&timeout, "timeout", 10, "Execution timeout for javascript code")
 
 	// env
 	re := regexp.MustCompile("_[a-z]")
@@ -231,6 +233,7 @@ func admissionHandler(action int, obj *unstructured.Unstructured, _ *unstructure
 		Name:       name,
 		Resources:  res,
 		Javascript: js,
+		Timeout:    timeout,
 	}
 	code, err := admissions.Upsert(adm)
 	if err != nil {
