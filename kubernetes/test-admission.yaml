@@ -9,18 +9,18 @@ spec:
     - pods
   js: |
     function jsa_init(state) {
-      log("test-jsa init")
+      jsa_log("test-jsa init")
       state.pods = 0
     }
     function jsa_created(obj, sync, state) {
-      log("test-jsa created: ", obj.metadata.namespace, " ", obj.metadata.name, " ", obj.metadata.resourceVersion)
+      jsa_log("test-jsa created: ", obj.metadata.namespace, " ", obj.metadata.name, " ", obj.metadata.resourceVersion)
       state.pods = state.pods+1
     }
     function jsa_updated(obj, old) {
-      log("test-jsa updated: ", obj.metadata.namespace, " ", obj.metadata.name, " ", obj.metadata.resourceVersion)
+      jsa_log("test-jsa updated: ", obj.metadata.namespace, " ", obj.metadata.name, " ", obj.metadata.resourceVersion)
     }
     function jsa_deleted(obj, old) {
-      log("test-jsa deleted: ", obj.metadata.namespace, " ", obj.metadata.name, " ", obj.metadata.resourceVersion)
+      jsa_log("test-jsa deleted: ", obj.metadata.namespace, " ", obj.metadata.name, " ", obj.metadata.resourceVersion)
     }
     function jsa_mutate(op, obj, sync, state) {
       if (op != "CREATE") return;

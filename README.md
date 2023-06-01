@@ -173,7 +173,7 @@ function jsa_created(obj, [sync], [state])
 function jsa_updated(obj, old, [sync], [state])
 function jsa_deleted(obj, [sync], [state])
 
-// utils
+// utils - jsa_debug() and jsa_debugf() are only visible in debug mode
 function jsa_debug(s...)
 function jsa_debugf(fmt, s...)
 function jsa_log(s...)

@@ -69,25 +69,25 @@ func NewJsContext(name string, js string, timeout int) (*JsContext, error) {
 		}
 
 		// add runtime utils
-		err = runtime.Set("log", func(a ...interface{}) {
+		err = runtime.Set("jsa_log", func(a ...interface{}) {
 			logs.Infof("js(%s) %s\n", name, fmt.Sprint(a...))
 		})
 		if err != nil {
 			return nil, err
 		}
-		err = runtime.Set("logf", func(f string, a ...interface{}) {
+		err = runtime.Set("jsa_logf", func(f string, a ...interface{}) {
 			logs.Infof("js(%s) %s\n", name, fmt.Sprintf(f, a...))
 		})
 		if err != nil {
 			return nil, err
 		}
-		err = runtime.Set("debug", func(a ...interface{}) {
+		err = runtime.Set("jsa_debug", func(a ...interface{}) {
 			logs.Debugf("js(%s) %s\n", name, fmt.Sprint(a...))
 		})
 		if err != nil {
 			return nil, err
 		}
-		err = runtime.Set("debugf", func(f string, a ...interface{}) {
+		err = runtime.Set("jsa_debugf", func(f string, a ...interface{}) {
 			logs.Debugf("js(%s) %s\n", name, fmt.Sprintf(f, a...))
 		})
 		if err != nil {
