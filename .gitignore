@@ -5,3 +5,4 @@
 certs/
 /tests/jsa.tgz
 /tests/k3s.config
+/tests/k3s-registries.yaml

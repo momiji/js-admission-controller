@@ -4,11 +4,11 @@ cd "$(dirname "$0")"
 
 HOSTNAME=$(hostname -s)
 SERVICE=test-jsa.test-jsa.svc
-DOCKER=$( which podman &> /dev/null && echo podman || echo docker )
+[ -z "${DOCKER:-}" ] && DOCKER=$( which podman &> /dev/null && echo podman || echo docker )
 
 # certificates
 install -m 0750 -d certs
-$DOCKER run --rm -u $(id -u) -v $PWD/certs:/certs \
+sudo $DOCKER run --rm -u $(id -u) -v $PWD/certs:/certs \
     -e CA_EXPIRE=3600 -e SSL_EXPIRE=3600 -e SSL_SUBJECT="$HOSTNAME" -e SSL_DNS="$HOSTNAME,$SERVICE" -e SSL_IP="127.0.0.1" \
     -e CA_KEY=ca.key -e CA_CERT=ca.crt \
     -e SSL_KEY=tls.key -e SSL_CERT=tls.crt -e SSL_CSR=tls.csr \

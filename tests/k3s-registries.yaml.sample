@@ -1,0 +1,8 @@
+mirrors:
+  "docker.io":
+    endpoint:
+      - "https://my-docker-mirror/v2/proxy-docker.io"
+configs:
+  "my-docker-mirror":
+    tls:
+      insecure_skip_verify: true
