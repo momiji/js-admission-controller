@@ -1,3 +1,17 @@
+# [1.2.0](https://github.com/momiji/js-admissions-controller/compare/v1.1.1...v1.2.0) (2023-06-08)
+
+
+### Bug Fixes
+
+* add javascript execution timeout ([0bbd5e8](https://github.com/momiji/js-admissions-controller/commit/0bbd5e81506db756aee4827d62cfdcac94fb051a))
+* correct issues from inspect code ([1fa0c05](https://github.com/momiji/js-admissions-controller/commit/1fa0c05628ea8a1b7c7b7cd043f289327c61a9e7))
+* rename log functions to jsa_ ([cb13ce3](https://github.com/momiji/js-admissions-controller/commit/cb13ce364b96cc08df686f15be74ddcfda36f956))
+
+
+### Features
+
+* show version on startup ([ad396d8](https://github.com/momiji/js-admissions-controller/commit/ad396d887d30c8cbe9e16af6be7977f8530242be))
+
 ## [1.1.1](https://github.com/momiji/js-admissions-controller/compare/v1.1.0...v1.1.1) (2023-05-26)
 
 
