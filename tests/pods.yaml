@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: test-log
+  name: test-pod
   namespace: test-jsa
 spec:
   affinity:
@@ -22,7 +22,7 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  name: test-log-pending
+  name: test-pod-pending
   namespace: test-jsa
 spec:
   affinity:
@@ -38,3 +38,23 @@ spec:
       image: busybox
       command: [ "sleep", "10s" ]
   restartPolicy: Never
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-deployment
+  namespace: test-jsa
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-deployment
+  template:
+    metadata:
+      labels:
+        app: test-deployment
+    spec:
+      containers:
+        - name: sleep
+          image: busybox
+          command: [ "sleep", "10s" ]

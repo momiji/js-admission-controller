@@ -3,7 +3,7 @@ set -Eeuo pipefail
 cd "$(dirname "$0")"
 
 [ -z "${DOCKER:-}" ] && DOCKER=$( which podman &> /dev/null && echo podman || echo docker )
-[ -z "${REGISTRY_PORT:-}" ] && REGISTRY_PORT=$( python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()' )
+[ -z "${REGISTRY_PORT:-}" ] && REGISTRY_PORT=$( python3 -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()' )
 
 echo "container cmd: sudo $DOCKER"
 echo "registry port: $REGISTRY_PORT"
@@ -22,6 +22,7 @@ sudo $DOCKER rm jsa-k3s 2> /dev/null ||:
 sleep 1
 
 # start k3s in docker
+[ -f k3s-registries.yaml ] || :> k3s-registries.yaml
 sudo $DOCKER run --rm -d --name jsa-k3s --hostname localhost --privileged -p 6443:6443 -p $REGISTRY_PORT:32000 -v $PWD/k3s-registries.yaml:/etc/rancher/k3s/registries.yaml rancher/k3s:v1.27.2-k3s1 server --disable=traefik --disable=metrics-server --disable=local-storage --disable=coredns
 
 # wait for config

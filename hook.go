@@ -3,16 +3,17 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"strings"
+
 	"github.com/momiji/js-admissions-controller/logs"
 	"github.com/momiji/js-admissions-controller/utils"
 	"github.com/snorwin/jsonpatch"
-	"io"
 	admission "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"net/http"
-	"strings"
 )
 
 func serveMutate(w http.ResponseWriter, r *http.Request) {
@@ -86,10 +87,11 @@ func mutate(ar *admission.AdmissionReview) *admission.AdmissionResponse {
 	}
 
 	// log
-	logs.Tracef("Mutate: %s %s ns=%s %s", ar.Request.Operation, utils.GVK1ToString(ar.Request.Kind), ar.Request.Namespace, ar.Request.Name)
+	name := ar.Request.Name
+	logs.Tracef("Mutate: %s %s ns=%s name=%s", ar.Request.Operation, utils.GVK1ToString(ar.Request.Kind), ar.Request.Namespace, name)
 	showLog := func(show bool, res string) {
 		if show {
-			logs.Infof("Mutate: %s %s ns=%s %s - %s", ar.Request.Operation, utils.GVK1ToString(ar.Request.Kind), ar.Request.Namespace, ar.Request.Name, res)
+			logs.Infof("Mutate: %s %s ns=%s name=%s - %s", ar.Request.Operation, utils.GVK1ToString(ar.Request.Kind), ar.Request.Namespace, name, res)
 		}
 	}
 
@@ -108,6 +110,10 @@ func mutate(ar *admission.AdmissionReview) *admission.AdmissionResponse {
 	newUObj := &unstructured.Unstructured{Object: uObj.Object}
 	changed := false
 	mutations := make([]string, 0)
+
+	if ar.Request.Operation == "CREATE" && name == "" {
+		name = uObj.GetGenerateName() + "???"
+	}
 
 	for _, code := range adms {
 		res, err := code.Mutate(ar.Request.Operation, newUObj.DeepCopy())
@@ -168,11 +174,11 @@ func validate(ar *admission.AdmissionReview) *admission.AdmissionResponse {
 	}
 
 	// log
-	logs.Tracef("Validate: %s %s ns=%s %s", ar.Request.Operation, utils.GVK1ToString(ar.Request.Kind), ar.Request.Namespace, ar.Request.Name)
+	logs.Tracef("Validate: %s %s ns=%s name=%s", ar.Request.Operation, utils.GVK1ToString(ar.Request.Kind), ar.Request.Namespace, ar.Request.Name)
 	doLog := false
 	showLog := func(show bool, res string) {
 		if show {
-			logs.Infof("Validate: %s %s ns=%s %s - %s", ar.Request.Operation, utils.GVK1ToString(ar.Request.Kind), ar.Request.Namespace, ar.Request.Name, res)
+			logs.Infof("Validate: %s %s ns=%s name=%s - %s", ar.Request.Operation, utils.GVK1ToString(ar.Request.Kind), ar.Request.Namespace, ar.Request.Name, res)
 		}
 	}
 
