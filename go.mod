@@ -10,7 +10,7 @@ require (
 	github.com/snorwin/jsonpatch v1.4.0
 	github.com/spf13/pflag v1.0.5
 	k8s.io/api v0.27.2
-	k8s.io/apimachinery v0.27.2
+	k8s.io/apimachinery v0.27.3
 	k8s.io/client-go v0.27.2
 	k8s.io/klog/v2 v2.100.1
 )
