@@ -5,7 +5,7 @@ go 1.20
 replace github.com/snorwin/jsonpatch => ./jsonpatch
 
 require (
-	github.com/dop251/goja v0.0.0-20230427124612-428fc442ff5f
+	github.com/dop251/goja v0.0.0-20230626124041-ba8a63e79201
 	github.com/jolestar/go-commons-pool/v2 v2.1.2
 	github.com/snorwin/jsonpatch v1.4.0
 	github.com/spf13/pflag v1.0.5
