@@ -12,7 +12,7 @@ endif
 .PHONY: all
 all: $(BIN)
 
-$(BIN): $(SRC)
+$(BIN): $(SRC) go.mod go.sum
 	go build -o $(BIN) -ldflags="-w -s -X 'main.Version=$(RELEASE)'"
 
 .PHONY: run
