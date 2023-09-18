@@ -18,7 +18,7 @@ Releases follow semver specification
 - **x** is the last x.y.z version
 
 Additional tags:
-- **edge**: main version always up-to-date
+- **edge**: main version always up-to-date, unstable and that may not work at all
 - **latest**: last stable version
 
 # What is it?
