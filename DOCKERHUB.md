@@ -12,9 +12,14 @@ Kubernetes admission webhook controller with javascript based admissions defined
 
 # Tags
 
+Releases follow semver specification
+- **x.y.z** is the full version number
+- **x.y** is the last x.y.z version
+- **x** is the last x.y.z version
+
+Additional tags:
 - **edge**: main version always up-to-date
 - **latest**: last stable version
-- **1**, **1.1**, **1.1.1**
 
 # What is it?
 

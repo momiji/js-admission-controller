@@ -29,6 +29,29 @@ spec:
     }
 ```
 
+TOC:
+- [A brief history](#a-brief-history)
+- [Installation](#installation)
+- [Javascript specification](#javascript-specification)
+- [Javascript utilities](#javascript-utilities)
+- [Functions to implement](#functions-to-implement)
+- [Examples](#examples)
+- [Real world use case](#real-world-use-case)
+- [Notes](#notes)
+- [Development](#development)
+
+## A brief history
+
+The idea for this project was born during the installation and configuration of SAS Viya4 for a customer.
+
+In SAS Viya4, it is often necessary to type the nodes of the kubernetes cluster according to their role, and this is done by using the native taints and tolerations of kubernetes.
+
+Unfortunately, taints are global to all pods on a node, which can impact other components than those deployed by SAS Viya4, like loggers or drivers, because it forbids them to start on tainted nodes if they don't have the appropriate tolerations.
+
+To solve this problem, the first approach was to modify all the objects (pods, podtemplates, ...) generated in the installation phase (with kustomize), by updating their nodeAffinity/nodeSelector. But this requires to know in advance the exact list of all the objects that will be created by the operator in charge of the deployment.
+
+An alternative idea then came up: make the modifications at the creation of the pods, by developing a mutating admission webhook, and to facilitate the development and testing of the 150 pods to be changed, the code must be located elsewhere than in the webhook and coded in a dynamic language like javascript.
+
 ## Installation
 
 ### Clone the project
@@ -80,80 +103,6 @@ spec:
       return { Allowed: true, Result: obj }
     }
 EOF
-```
-
-## A brief history
-
-The idea for this project was born during the installation and configuration of SAS Viya4 for a customer.
-
-In SAS Viya4, it is often necessary to type the nodes of the kubernetes cluster according to their role, and this is done by using the native taints and tolerations of kubernetes.
-
-Unfortunately, taints are global to all pods on a node, which can impact other components than those deployed by SAS Viya4, like loggers or drivers, because it forbids them to start on tainted nodes if they don't have the appropriate tolerations.
-
-To solve this problem, the first approach was to modify all the objects (pods, podtemplates, ...) generated in the installation phase (with kustomize), by updating their nodeAffinity/nodeSelector. But this requires to know in advance the exact list of all the objects that will be created by the operator in charge of the deployment.
-
-An alternative idea then came up: make the modifications at the creation of the pods, by developing a mutating admission webhook, and to facilitate the development and testing of the 150 pods to be changed, the code must be located elsewhere than in the webhook and coded in a dynamic language like javascript. 
-
-## Setup development environment
-
-2 scenarios have been tested:
-- k3s in docker, used to test the controller in a fresh new kubernetes node
-- microk8s, used for development
-
-Requirements:
-- ubuntu
-- docker: `sudo apt install docker.io`
-- jq: `sudo apt install jq`
-- kubectl: see https://kubernetes.io/fr/docs/tasks/tools/install-kubectl/
-- microk8s with registry addon: `snap install microk8s ; microk8s enable registry`
-
-### Using k3s
-
-A full integration test can be performed on a docker k3s instance.
-It takes around 1 min to finish on my 6 years old laptop.
-
-```sh
-$ ./tests/test-k3s.sh
-```
-
-### Using microk8s
-
-Using microk8s is easier to use as its internal registry can be pushed from host using a simple `docker push` command.
-
-To build and copy image into microk8s registry:
-
-```sh
-$ make
-$ make docker
-$ make local
-```
-
-To deploy:
-
-```sh
-$ ./tests/install.sh
-$ kubectl wait deployment -n test-jsa test-jsa --for condition=Available=True --timeout=90s
-```
-
-To test:
-```
-$ ./tests/pods.sh
-```
-
-To update controller:
-
-```sh
-$ make local
-$ kubectl rollout restart -n test-jsa deployment/test-jsa
-$ kubectl wait deployment -n test-jsa test-jsa --for condition=Available=True --timeout=90s
-```
-
-To remove all objects except the CRD, simply delete `test-jsa` namespace:
-
-```sh
-$ kubectl delete namespace test-jsa
-$ kubectl delete validatingwebhookconfigurations.admissionregistration.k8s.io test-jsa 
-$ kubectl delete mutatingwebhookconfigurations.admissionregistration.k8s.io test-jsa 
 ```
 
 ## Javascript specification
@@ -443,3 +392,73 @@ Doing so may result in admissions been executed several times, which should not 
 
 If you need to prevent namespace admissions to mutate/validate some resources,
 you might want to add cluster admissions to validate the creation and modification of JsAdmissions.
+
+## Development
+
+2 scenarios have been tested:
+- k3s in docker, used to test the controller in a fresh new kubernetes node
+- microk8s, used for development
+
+Requirements:
+- ubuntu
+- docker: `sudo apt install docker.io`
+- jq: `sudo apt install jq`
+- kubectl: see https://kubernetes.io/fr/docs/tasks/tools/install-kubectl/
+- microk8s with registry addon: `snap install microk8s ; microk8s enable registry`
+
+### Using k3s
+
+A full integration test can be performed on a docker k3s instance.
+It takes around 1 min to finish on my 6 years old laptop.
+
+```sh
+$ ./tests/test-k3s.sh
+```
+
+### Using microk8s
+
+Using microk8s is easier to use as its internal registry can be pushed from host using a simple `docker push` command.
+
+To build and copy image into microk8s registry:
+
+```sh
+$ make
+$ make docker
+$ make local
+```
+
+To deploy:
+
+```sh
+$ ./tests/install.sh
+$ kubectl wait deployment -n test-jsa test-jsa --for condition=Available=True --timeout=90s
+```
+
+To test:
+```
+$ ./tests/pods.sh
+```
+
+To update controller:
+
+```sh
+$ make local
+$ kubectl rollout restart -n test-jsa deployment/test-jsa
+$ kubectl wait deployment -n test-jsa test-jsa --for condition=Available=True --timeout=90s
+```
+
+To remove all objects except the CRD, simply delete `test-jsa` namespace:
+
+```sh
+$ kubectl delete namespace test-jsa
+$ kubectl delete validatingwebhookconfigurations.admissionregistration.k8s.io test-jsa 
+$ kubectl delete mutatingwebhookconfigurations.admissionregistration.k8s.io test-jsa 
+```
+
+### Release a new version
+
+On push to github, `edge` si automatically rebuild and pushed to `ghcr.io` and `docker.io`.
+
+To create a new release:
+- run github action GitHub Relaese
+- update dockerhub description if necessary
