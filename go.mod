@@ -1,6 +1,6 @@
 module github.com/momiji/js-admissions-controller
 
-go 1.20
+go 1.21
 
 replace github.com/snorwin/jsonpatch => ./jsonpatch
 
