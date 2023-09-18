@@ -460,5 +460,5 @@ $ kubectl delete mutatingwebhookconfigurations.admissionregistration.k8s.io test
 On push to github, `edge` si automatically rebuild and pushed to `ghcr.io` and `docker.io`.
 
 To create a new release:
-- run github action GitHub Relaese
+- run github action GitHub Release manually, or `gh workflow run "GitHub Release"`
 - update dockerhub description if necessary
